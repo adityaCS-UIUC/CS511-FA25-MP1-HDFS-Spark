@@ -28,7 +28,7 @@ ENV PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$PATH
 RUN curl -fsSL https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz \
     | tar -xz -C /opt && ln -s /opt/hadoop-${HADOOP_VERSION} ${HADOOP_HOME}
 
-RUN curl -fsSL https://downloads.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz \
+RUN curl -fsSL https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz \
     | tar -xz -C /opt && ln -s /opt/spark-${SPARK_VERSION}-bin-hadoop3 ${SPARK_HOME}
 
 # Hadoop expects JAVA_HOME in hadoop-env
