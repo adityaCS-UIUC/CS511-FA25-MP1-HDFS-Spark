@@ -1,37 +1,36 @@
 #!/bin/bash
-set -euo pipefail
 
-# SSH baseline
+####################################################################################
+# DO NOT MODIFY THE BELOW ##########################################################
+
+# Exchange SSH keys.
 /etc/init.d/ssh start
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/shared_rsa
+ssh-copy-id -i ~/.ssh/id_rsa -o 'IdentityFile ~/.ssh/shared_rsa' -o StrictHostKeyChecking=no -f worker1
+ssh-copy-id -i ~/.ssh/id_rsa -o 'IdentityFile ~/.ssh/shared_rsa' -o StrictHostKeyChecking=no -f worker2
 
-# Push our key to workers (idempotent)
-ssh-copy-id -i ~/.ssh/id_rsa -o 'IdentityFile ~/.ssh/shared_rsa' -o StrictHostKeyChecking=no -f worker1 || true
-ssh-copy-id -i ~/.ssh/id_rsa -o 'IdentityFile ~/.ssh/shared_rsa' -o StrictHostKeyChecking=no -f worker2 || true
+# DO NOT MODIFY THE ABOVE ##########################################################
+####################################################################################
 
-# Env (use absolute paths remotely)
-export JAVA_HOME=/usr/local/openjdk-8
-export HADOOP_HOME=/opt/hadoop
-export SPARK_HOME=/opt/spark
-export PATH="$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$PATH"
+# Start HDFS/Spark main here
 
-# Format NN once
-if [ ! -f /data/nn/current/VERSION ]; then
-  /opt/hadoop/bin/hdfs namenode -format -force -nonInteractive
+# bash
+export JAVA_HOME="/usr/local/openjdk-8/jre"
+
+export HDFS_NAMENODE_USER="root"
+export HDFS_DATANODE_USER="root"
+export HDFS_SECONDARYNAMENODE_USER="root"
+
+# Check if NameNode is formatted. Format only if it's the first time.
+if [ ! -d "/tmp/hadoop-data/dfs/namenode/current" ]; then
+    echo "Formatting NameNode..."
+    hdfs namenode -format -force -nonInteractive
 fi
 
-# Start HDFS daemons
-/opt/hadoop/bin/hdfs --daemon start namenode
-/opt/hadoop/bin/hdfs --daemon start datanode
-ssh worker1 -t "/opt/hadoop/bin/hdfs --daemon start datanode || true"
-ssh worker2 -t "/opt/hadoop/bin/hdfs --daemon start datanode || true"
+echo "Starting HDFS cluster (NameNode on main, DataNodes on workers)..."
+# Start NameNode on main and DataNodes on worker1 and worker2 via SSH
+$HADOOP_HOME/sbin/start-dfs.sh
 
-# Start Spark standalone
-/opt/spark/sbin/start-master.sh
-/opt/spark/sbin/start-worker.sh spark://main:7077
-ssh worker1 -t "/opt/spark/sbin/start-worker.sh spark://main:7077 || true"
-ssh worker2 -t "/opt/spark/sbin/start-worker.sh spark://main:7077 || true"
-
-# Keep container alive
-exec bash
+# Keep the container running
+tail -f /dev/null
