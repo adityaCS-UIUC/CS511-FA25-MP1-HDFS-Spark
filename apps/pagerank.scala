@@ -1,5 +1,5 @@
-// Simplified PageRank with damping d=0.85 until max delta < 1e-4
-// Input edges in HDFS: "src,dst" per line. Output to stdout "node,rank" (3 decimals), sorted by rank desc then node asc.
+// Simplified PageRank, damping d=0.85, stop when max delta < 1e-4.
+// Input edges: "src,dst" per line. Output: "node,rank" with 3 decimals, sorted desc rank then node asc.
 
 import org.apache.spark.rdd.RDD
 
