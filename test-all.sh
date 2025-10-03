@@ -87,8 +87,8 @@ function test_terasorting() {
 2050,9999-9999-99999
 EOF
     /opt/hadoop/bin/hdfs dfs -put -f /tmp/caps.csv /datasets/caps.csv
-    spark-shell --master spark://main:7077 -i /apps/terasorting.scala | grep -E "^[0-9]{4},"
-  ' || true
+    /opt/spark/bin/spark-shell --master spark://main:7077 -i /apps/terasorting.scala | grep -E "^[0-9]{4},"
+  ' 2>/dev/null
 }
 
 function test_pagerank() {
@@ -110,8 +110,8 @@ function test_pagerank() {
 4,1
 EOF
     /opt/hadoop/bin/hdfs dfs -put -f /tmp/pagerank_edges.csv /datasets/pagerank_edges.csv
-    spark-shell --master spark://main:7077 -i /apps/pagerank.scala | grep -E "^[0-9]+,"
-  ' || true
+    /opt/spark/bin/spark-shell --master spark://main:7077 -i /apps/pagerank.scala | grep -E "^[0-9]+,"
+  ' 2>/dev/null
 }
 
 GREEN='\033[0;32m'
