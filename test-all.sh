@@ -78,47 +78,60 @@ function test_spark_q4() {
 
 # --- Part 3: Tera Sorting demo (20 pts) ---
 function test_terasorting() {
-  # 1) put a tiny dataset into HDFS at the path expected by apps/terasorting.scala
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '\
-    printf "1999,1234-5678-91011\n1800,1001-1002-10003\n2023,0829-0914-00120\n2050,9999-9999-99999\n" > /caps.csv && \
-    hdfs dfs -mkdir -p /datasets && \
-    hdfs dfs -put -f /caps.csv /datasets/caps.csv'
+  # Stage /datasets/caps.csv *via Spark*, not hdfs CLI
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc '
+spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false << "EOF"
+val spark = org.apache.spark.sql.SparkSession.builder.getOrCreate()
+val sc = spark.sparkContext
+val data = Seq(
+  "1999,1234-5678-91011",
+  "1800,1001-1002-10003",
+  "2023,0829-0914-00120",
+  "2050,9999-9999-99999"
+)
+import org.apache.hadoop.fs.{FileSystem, Path}
+val fs = FileSystem.get(sc.hadoopConfiguration)
+val tmp = new Path("hdfs://main:9000/datasets/caps.csv.tmp")
+val fin = new Path("hdfs://main:9000/datasets/caps.csv")
+sc.parallelize(data).repartition(1).saveAsTextFile(tmp.toString)
+if (fs.exists(fin)) fs.delete(fin, true)
+fs.rename(tmp, fin)
+sys.exit(0)
+EOF
+' >/dev/null
 
-  # 2) run the job and capture only the result lines "year,serial"
-  docker compose -f cs511p1-compose.yaml cp apps/terasorting.scala main:/apps/terasorting.scala
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '\
-    cat /apps/terasorting.scala | spark-shell --master spark://main:7077 \
-      --conf spark.ui.showConsoleProgress=false 2>/dev/null | \
-    grep -E "^[0-9]+,.*$"'
+  # Run your scala with stdin; grep only the clean "year,serial" lines
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc \
+    'spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false 2>/dev/null' \
+    < apps/terasorting.scala | grep -E "^[0-9]+,.*$"
 }
 
 # --- Part 4: PageRank extra credit (20 pts) ---
 function test_pagerank() {
-  # 1) stage the example edge list to the path expected by apps/pagerank.scala
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '\
-    cat > /pagerank_edges.csv <<EOF
-2,3
-3,2
-4,2
-5,2
-5,6
-6,5
-7,5
-8,5
-9,5
-10,5
-11,5
-4,1
+  # Stage /datasets/pagerank_edges.csv *via Spark*
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc '
+spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false << "EOF"
+val spark = org.apache.spark.sql.SparkSession.builder.getOrCreate()
+val sc = spark.sparkContext
+val edges = Seq(
+  "2,3","3,2","4,2","5,2","5,6","6,5",
+  "7,5","8,5","9,5","10,5","11,5","4,1"
+)
+import org.apache.hadoop.fs.{FileSystem, Path}
+val fs = FileSystem.get(sc.hadoopConfiguration)
+val tmp = new Path("hdfs://main:9000/datasets/pagerank_edges.csv.tmp")
+val fin = new Path("hdfs://main:9000/datasets/pagerank_edges.csv")
+sc.parallelize(edges).repartition(1).saveAsTextFile(tmp.toString)
+if (fs.exists(fin)) fs.delete(fin, true)
+fs.rename(tmp, fin)
+sys.exit(0)
 EOF
-    hdfs dfs -mkdir -p /datasets && \
-    hdfs dfs -put -f /pagerank_edges.csv /datasets/pagerank_edges.csv'
+' >/dev/null
 
-  # 2) run the job and capture only "node,rank" lines
-  docker compose -f cs511p1-compose.yaml cp apps/pagerank.scala main:/apps/pagerank.scala
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '\
-    cat /apps/pagerank.scala | spark-shell --master spark://main:7077 \
-      --conf spark.ui.showConsoleProgress=false 2>/dev/null | \
-    grep -E "^[0-9]+,[0-9]+\.[0-9]{3}$"'
+  # Run your PageRank scala via stdin; print only "node,rank" lines like "2,0.350"
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc \
+    'spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false 2>/dev/null' \
+    < apps/pagerank.scala | grep -E "^[0-9]+,[0-9]+\.[0-9]{3}$"
 }
 
 GREEN='\033[0;32m'
