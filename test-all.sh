@@ -1,4 +1,5 @@
 #!/bin/bash
+COMPOSE="docker compose -f cs511p1-compose.yaml -f docker-compose.spark.yml"
 # Resolve spark-shell inside the "main" container, no assumptions.
 SPARK_WRAPPER='
 set -e
@@ -21,15 +22,15 @@ function test_hdfs_q1() {
 }
 
 function test_hdfs_q2() {
-    docker compose -f cs511p1-compose.yaml cp resources/fox.txt main:/test_fox.txt
-    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+    $COMPOSE cp resources/fox.txt main:/test_fox.txt
+    $COMPOSE exec main bash -x -c '\
         hdfs dfs -mkdir -p /test; \
         hdfs dfs -put -f /test_fox.txt /test/fox.txt; \
         hdfs dfs -cat /test/fox.txt'
 }
 
 function test_hdfs_q3() {
-    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+    $COMPOSE exec main bash -x -c '\
         hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://main:9000 -op create -threads 100 -files 10000; \
         hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://main:9000 -op open -threads 100 -files 10000; \
         hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://main:9000 -op delete -threads 100 -files 10000; \
@@ -37,9 +38,9 @@ function test_hdfs_q3() {
 }
 
 function test_hdfs_q4() {
-    docker compose -f cs511p1-compose.yaml cp resources/hadoop-terasort-3.3.6.jar \
+    $COMPOSE cp resources/hadoop-terasort-3.3.6.jar \
     main:/hadoop-terasort-3.3.6.jar
-docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+$COMPOSE exec main bash -x -c '\
     hdfs dfs -rm -r -f tera-in tera-out tera-val; \
     hadoop jar /hadoop-terasort-3.3.6.jar teragen 1000000 tera-in; \
     hadoop jar /hadoop-terasort-3.3.6.jar terasort tera-in tera-out; \
@@ -49,43 +50,43 @@ docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
 
 # test_spark.sh
 function test_spark_q1() {
-    docker compose -f cs511p1-compose.yaml cp resources/active_executors.scala \
+    $COMPOSE cp resources/active_executors.scala \
         main:/active_executors.scala
-    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+    $COMPOSE exec main bash -x -c '\
         cat /active_executors.scala | spark-shell --master spark://main:7077'
 }
 
 function test_spark_q2() {
-    docker compose -f cs511p1-compose.yaml cp resources/pi.scala main:/pi.scala
-    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+    $COMPOSE cp resources/pi.scala main:/pi.scala
+    $COMPOSE exec main bash -x -c '\
         cat /pi.scala | spark-shell --master spark://main:7077'
 
 }
 
 function test_spark_q3() {
-    docker compose -f cs511p1-compose.yaml cp resources/fox.txt main:/test_fox.txt
-    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+    $COMPOSE cp resources/fox.txt main:/test_fox.txt
+    $COMPOSE exec main bash -x -c '\
         hdfs dfs -mkdir -p /test; \
         hdfs dfs -put -f /test_fox.txt /test/fox.txt; \
         hdfs dfs -cat /test/fox.txt'
-    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+    $COMPOSE exec main bash -x -c '\
         echo "sc.textFile(\"hdfs://main:9000/test/fox.txt\").collect()" | \
         spark-shell --master spark://main:7077'
 
 }
 
 function test_spark_q4() {
-    docker compose -f cs511p1-compose.yaml cp resources/spark-terasort-1.2.jar \
+    $COMPOSE cp resources/spark-terasort-1.2.jar \
         main:/spark-terasort-1.2.jar
-    docker compose -f cs511p1-compose.yaml exec main spark-submit \
+    $COMPOSE exec main spark-submit \
         --master spark://main:7077 \
         --class com.github.ehiggs.spark.terasort.TeraGen local:///spark-terasort-1.2.jar \
         100m hdfs://main:9000/spark/tera-in
-    docker compose -f cs511p1-compose.yaml exec main spark-submit \
+    $COMPOSE exec main spark-submit \
         --master spark://main:7077 \
         --class com.github.ehiggs.spark.terasort.TeraSort local:///spark-terasort-1.2.jar \
         hdfs://main:9000/spark/tera-in hdfs://main:9000/spark/tera-out
-    docker compose -f cs511p1-compose.yaml exec main spark-submit \
+    $COMPOSE exec main spark-submit \
         --master spark://main:7077 \
         --class com.github.ehiggs.spark.terasort.TeraValidate local:///spark-terasort-1.2.jar \
         hdfs://main:9000/spark/tera-out hdfs://main:9000/spark/tera-val
@@ -93,8 +94,8 @@ function test_spark_q4() {
 
 # --- Part 3: Tera Sorting demo (20 pts) ---
 function test_terasorting() {
-  # 1) Stage /datasets/caps.csv using Spark (no hdfs CLI)
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "$SPARK_WRAPPER" << "EOF" >/dev/null 2>/dev/null
+  # stage input into HDFS *via Spark* to avoid missing hdfs CLI
+  $COMPOSE exec -T main bash -lc 'cat << "EOF" | /opt/spark/bin/spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false >/dev/null 2>/dev/null
 val spark = org.apache.spark.sql.SparkSession.builder.getOrCreate()
 val sc = spark.sparkContext
 val data = Seq(
@@ -109,38 +110,31 @@ val tmp = new Path("hdfs://main:9000/datasets/caps.csv.tmp")
 val fin = new Path("hdfs://main:9000/datasets/caps.csv")
 sc.parallelize(data).repartition(1).saveAsTextFile(tmp.toString)
 if (fs.exists(fin)) fs.delete(fin, true)
-fs.rename(tmp, fin)
-sys.exit(0)
-EOF
+fs.rename(tmp, fin); sys.exit(0)
+EOF'
 
-  # 2) Run your Scala app by piping it to spark-shell; print only clean lines
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "$SPARK_WRAPPER" \
-    < apps/terasorting.scala 2>/dev/null | grep -E "^[0-9]+,.*$"
+  # run the scala app entirely inside the container and only print clean lines
+  $COMPOSE exec -T main bash -lc 'cat apps/terasorting.scala | /opt/spark/bin/spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false 2>/dev/null | grep -E "^[0-9]+,.*$"'
 }
 
 # --- Part 4: PageRank extra credit (20 pts) ---
 function test_pagerank() {
-  # 1) Stage /datasets/pagerank_edges.csv using Spark
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "$SPARK_WRAPPER" << "EOF" >/dev/null 2>/dev/null
+  # stage edges into HDFS via Spark
+  $COMPOSE exec -T main bash -lc 'cat << "EOF" | /opt/spark/bin/spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false >/dev/null 2>/dev/null
 val spark = org.apache.spark.sql.SparkSession.builder.getOrCreate()
 val sc = spark.sparkContext
-val edges = Seq(
-  "2,3","3,2","4,2","5,2","5,6","6,5",
-  "7,5","8,5","9,5","10,5","11,5","4,1"
-)
+val edges = Seq("2,3","3,2","4,2","5,2","5,6","6,5","7,5","8,5","9,5","10,5","11,5","4,1")
 import org.apache.hadoop.fs.{FileSystem, Path}
 val fs  = FileSystem.get(sc.hadoopConfiguration)
 val tmp = new Path("hdfs://main:9000/datasets/pagerank_edges.csv.tmp")
 val fin = new Path("hdfs://main:9000/datasets/pagerank_edges.csv")
 sc.parallelize(edges).repartition(1).saveAsTextFile(tmp.toString)
 if (fs.exists(fin)) fs.delete(fin, true)
-fs.rename(tmp, fin)
-sys.exit(0)
-EOF
+fs.rename(tmp, fin); sys.exit(0)
+EOF'
 
-  # 2) Run your PageRank; only emit "node,rank" like 2,0.350
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "$SPARK_WRAPPER" \
-    < apps/pagerank.scala 2>/dev/null | grep -E "^[0-9]+,[0-9]+\.[0-9]{3}$"
+  # run PR and emit only "node,rank" lines like 2,0.350
+  $COMPOSE exec -T main bash -lc 'cat apps/pagerank.scala | /opt/spark/bin/spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false 2>/dev/null | grep -E "^[0-9]+,[0-9]+\.[0-9]{3}$"'
 }
 
 GREEN='\033[0;32m'
@@ -246,3 +240,8 @@ fi
 
 echo "-----------------------------------";
 echo "Total Points/Full Points: ${total_score}/120";
+
+# start Spark cluster inside the official image
+$COMPOSE exec -T main    bash -lc '/opt/spark/sbin/start-master.sh -p 7077'
+$COMPOSE exec -T worker1 bash -lc '/opt/spark/sbin/start-worker.sh spark://main:7077'
+$COMPOSE exec -T worker2 bash -lc '/opt/spark/sbin/start-worker.sh spark://main:7077'
