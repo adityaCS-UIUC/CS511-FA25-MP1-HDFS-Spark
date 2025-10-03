@@ -1,0 +1,41 @@
+# no "version:" key
+services:
+  main:
+    image: bitnami/spark:3.5
+    container_name: cs511-fa25-mp1-hdfs-spark-main-1
+    hostname: main
+    environment:
+      - SPARK_MODE=master
+      - SPARK_NO_DAEMONIZE=yes
+    ports:
+      - "7077:7077"
+    volumes:
+      - ./:/work
+    working_dir: /work
+    command: [ "bash", "-lc", "tail -f /dev/null" ]  # keep container up
+
+  worker1:
+    image: bitnami/spark:3.5
+    container_name: cs511-fa25-mp1-hdfs-spark-worker1-1
+    hostname: worker1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://main:7077
+      - SPARK_NO_DAEMONIZE=yes
+    volumes:
+      - ./:/work
+    working_dir: /work
+    command: [ "bash", "-lc", "tail -f /dev/null" ]
+
+  worker2:
+    image: bitnami/spark:3.5
+    container_name: cs511-fa25-mp1-hdfs-spark-worker2-1
+    hostname: worker2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://main:7077
+      - SPARK_NO_DAEMONIZE=yes
+    volumes:
+      - ./:/work
+    working_dir: /work
+    command: [ "bash", "-lc", "tail -f /dev/null" ]
