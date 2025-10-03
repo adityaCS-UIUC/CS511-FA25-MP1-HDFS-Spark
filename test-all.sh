@@ -76,16 +76,49 @@ function test_spark_q4() {
         hdfs://main:9000/spark/tera-out hdfs://main:9000/spark/tera-val
 }
 
+# --- Part 3: Tera Sorting demo (20 pts) ---
 function test_terasorting() {
-    # call your program here
-    # make sure your program outputs only the result on screen
-    echo "please rewrite this function";
+  # 1) put a tiny dataset into HDFS at the path expected by apps/terasorting.scala
+  docker compose -f cs511p1-compose.yaml exec main bash -lc '\
+    printf "1999,1234-5678-91011\n1800,1001-1002-10003\n2023,0829-0914-00120\n2050,9999-9999-99999\n" > /caps.csv && \
+    hdfs dfs -mkdir -p /datasets && \
+    hdfs dfs -put -f /caps.csv /datasets/caps.csv'
+
+  # 2) run the job and capture only the result lines "year,serial"
+  docker compose -f cs511p1-compose.yaml cp apps/terasorting.scala main:/apps/terasorting.scala
+  docker compose -f cs511p1-compose.yaml exec main bash -lc '\
+    cat /apps/terasorting.scala | spark-shell --master spark://main:7077 \
+      --conf spark.ui.showConsoleProgress=false 2>/dev/null | \
+    grep -E "^[0-9]+,.*$"'
 }
 
+# --- Part 4: PageRank extra credit (20 pts) ---
 function test_pagerank() {
-    # extra credit
-    # make sure your program outputs only the result on screen
-    echo "please rewrite this function";
+  # 1) stage the example edge list to the path expected by apps/pagerank.scala
+  docker compose -f cs511p1-compose.yaml exec main bash -lc '\
+    cat > /pagerank_edges.csv <<EOF
+2,3
+3,2
+4,2
+5,2
+5,6
+6,5
+7,5
+8,5
+9,5
+10,5
+11,5
+4,1
+EOF
+    hdfs dfs -mkdir -p /datasets && \
+    hdfs dfs -put -f /pagerank_edges.csv /datasets/pagerank_edges.csv'
+
+  # 2) run the job and capture only "node,rank" lines
+  docker compose -f cs511p1-compose.yaml cp apps/pagerank.scala main:/apps/pagerank.scala
+  docker compose -f cs511p1-compose.yaml exec main bash -lc '\
+    cat /apps/pagerank.scala | spark-shell --master spark://main:7077 \
+      --conf spark.ui.showConsoleProgress=false 2>/dev/null | \
+    grep -E "^[0-9]+,[0-9]+\.[0-9]{3}$"'
 }
 
 GREEN='\033[0;32m'
