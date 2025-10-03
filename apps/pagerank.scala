@@ -13,53 +13,54 @@ val edges: RDD[(Int, Int)] = sc.textFile(inputPath)
   .map { s => val a = s.split(","); (a(0).toInt, a(1).toInt) }
   .cache()
 
-// nodes
+// nodes & N
 val nodes: RDD[Int] = edges.flatMap { case (u,v) => Seq(u,v) }.distinct().cache()
 val N = nodes.count().toDouble
 
-// adjacency and outdegree
+// adjacency + outdegree
 val adj: RDD[(Int, Array[Int])] = edges.groupByKey().mapValues(_.toArray).cache()
 val outDeg: RDD[(Int, Int)] = adj.mapValues(_.length).cache()
 
-// dangling nodes: nodes not in outDeg
+// dangling flags: true if node has no out-links
 val hasOut: RDD[(Int, Int)] = outDeg.mapValues(_ => 1)
 val dangling: RDD[(Int, Boolean)] =
   nodes.map(n => (n, false)).leftOuterJoin(hasOut)
        .map { case (n, (_, maybe)) => (n, maybe.isEmpty) }
        .cache()
 
-// init uniform
+// init uniform ranks
 var ranks: RDD[(Int, Double)] = nodes.map(n => (n, 1.0 / N)).cache()
 
 def iterateOnce(r: RDD[(Int, Double)]): RDD[(Int, Double)] = {
-  // join ranks with adjacency; nodes missing from adj have no out-links
-  val joined = nodes.leftOuterJoin(adj).leftOuterJoin(r)
-    .map { case (n, ((_, maybeAdj), maybeR)) =>
-      val outs = maybeAdj.getOrElse(Array.empty[Int])
-      val rank = maybeR.getOrElse(1.0 / N)
-      (n, (outs, rank))
-    }.cache()
+  // join r with adjacency; ensure every node appears
+  val joined: RDD[(Int, (Array[Int], Double))] =
+    nodes.leftOuterJoin(adj).leftOuterJoin(r)
+         .map { case (n, ((_, maybeAdj), maybeR)) =>
+           val outs = maybeAdj.getOrElse(Array.empty[Int])
+           val rank = maybeR.getOrElse(1.0 / N)
+           (n, (outs, rank))
+         }
 
-  // contributions from non-dangling (outs.nonEmpty)
+  // contributions
   val contribs: RDD[(Int, Double)] =
     joined.flatMap { case (_, (outs, ru)) =>
-      if (outs.isEmpty) Iterator.empty
-      else outs.iterator.map(v => (v, ru / outs.length))
+      if (outs.isEmpty) Iterator.empty else outs.iterator.map(v => (v, ru / outs.length))
     }
 
   // dangling mass
-  val danglingMass = joined.filter { case (_, (outs, _)) => outs.isEmpty }
-                           .map { case (_, (_, r)) => r }.sum()
+  val danglingMass: Double = joined.filter { case (_, (outs, _)) => outs.isEmpty }
+                                   .map { case (_, (_, rnk)) => rnk }.sum()
+
   val base = (1.0 - d) / N + d * (danglingMass / N)
 
-  // inbound sums for all nodes (ensure every node appears)
+  // inbound sum for each node (ensure all nodes present)
   val inbound: RDD[(Int, Double)] =
     contribs.union(nodes.map(n => (n, 0.0))).reduceByKey(_ + _)
 
   inbound.mapValues(v => d * v + base)
 }
 
-// iterate to convergence or 100 iters
+// iterate to convergence
 var delta = Double.MaxValue
 var iters = 0
 while (delta > eps && iters < 100) {
@@ -71,7 +72,7 @@ while (delta > eps && iters < 100) {
   ranks = next
 }
 
-// format: round to 3 decimals, sort by rank desc then node asc
+// format & print
 val formatted = ranks
   .map { case (n, v) => (n, BigDecimal(v).setScale(3, BigDecimal.RoundingMode.HALF_UP).toDouble) }
   .sortBy({ case (n, v) => (-v, n) })

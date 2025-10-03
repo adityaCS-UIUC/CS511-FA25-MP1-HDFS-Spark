@@ -1,5 +1,7 @@
 #!/bin/bash
 COMPOSE="docker compose -f cs511p1-compose.yaml -f docker-compose.spark.yml"
+SPARK="/opt/spark/bin/spark-shell"
+MASTER="spark://main:7077"
 # Resolve spark-shell inside the "main" container, no assumptions.
 SPARK_WRAPPER='
 set -e
@@ -94,8 +96,8 @@ function test_spark_q4() {
 
 # --- Part 3: Tera Sorting demo (20 pts) ---
 function test_terasorting() {
-  # stage input into HDFS *via Spark* to avoid missing hdfs CLI
-  $COMPOSE exec -T main bash -lc 'cat << "EOF" | /opt/spark/bin/spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false >/dev/null 2>/dev/null
+  # stage /datasets/caps.csv INTO HDFS via Spark (no hdfs CLI needed)
+  $COMPOSE exec -T main bash -lc "cat << 'EOF' | $SPARK --master $MASTER --conf spark.ui.showConsoleProgress=false >/dev/null 2>/dev/null
 val spark = org.apache.spark.sql.SparkSession.builder.getOrCreate()
 val sc = spark.sparkContext
 val data = Seq(
@@ -111,10 +113,31 @@ val fin = new Path("hdfs://main:9000/datasets/caps.csv")
 sc.parallelize(data).repartition(1).saveAsTextFile(tmp.toString)
 if (fs.exists(fin)) fs.delete(fin, true)
 fs.rename(tmp, fin); sys.exit(0)
-EOF'
+EOF"
 
-  # run the scala app entirely inside the container and only print clean lines
-  $COMPOSE exec -T main bash -lc 'cat apps/terasorting.scala | /opt/spark/bin/spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false 2>/dev/null | grep -E "^[0-9]+,.*$"'
+  # run your Scala from the HOST into container via STDIN; emit only clean lines
+  $COMPOSE exec -T main bash -lc "$SPARK --master $MASTER --conf spark.ui.showConsoleProgress=false 2>/dev/null" \
+    < apps/terasorting.scala | grep -E "^[0-9]+,.*$"
+}
+
+function test_pagerank() {
+  # stage edges file into HDFS via Spark
+  $COMPOSE exec -T main bash -lc "cat << 'EOF' | $SPARK --master $MASTER --conf spark.ui.showConsoleProgress=false >/dev/null 2>/dev/null
+val spark = org.apache.spark.sql.SparkSession.builder.getOrCreate()
+val sc = spark.sparkContext
+val edges = Seq("2,3","3,2","4,2","5,2","5,6","6,5","7,5","8,5","9,5","10,5","11,5","4,1")
+import org.apache.hadoop.fs.{FileSystem, Path}
+val fs  = FileSystem.get(sc.hadoopConfiguration)
+val tmp = new Path("hdfs://main:9000/datasets/pagerank_edges.csv.tmp")
+val fin = new Path("hdfs://main:9000/datasets/pagerank_edges.csv")
+sc.parallelize(edges).repartition(1).saveAsTextFile(tmp.toString)
+if (fs.exists(fin)) fs.delete(fin, true)
+fs.rename(tmp, fin); sys.exit(0)
+EOF"
+
+  # run PR; only lines like "2,0.350"
+  $COMPOSE exec -T main bash -lc "$SPARK --master $MASTER --conf spark.ui.showConsoleProgress=false 2>/dev/null" \
+    < apps/pagerank.scala | grep -E "^[0-9]+,[0-9]+\.[0-9]{3}$"
 }
 
 # --- Part 4: PageRank extra credit (20 pts) ---

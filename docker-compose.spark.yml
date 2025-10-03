@@ -1,16 +1,15 @@
 services:
   main:
-    image: apache/spark:3.5.1
+    image: apache/spark:3.5.3
     container_name: cs511-fa25-mp1-hdfs-spark-main-1
     hostname: main
     volumes:
       - ./:/work
     working_dir: /work
-    # keep container up; we'll start master via start-all.sh
     command: [ "bash", "-lc", "tail -f /dev/null" ]
 
   worker1:
-    image: apache/spark:3.5.1
+    image: apache/spark:3.5.3
     container_name: cs511-fa25-mp1-hdfs-spark-worker1-1
     hostname: worker1
     volumes:
@@ -19,7 +18,7 @@ services:
     command: [ "bash", "-lc", "tail -f /dev/null" ]
 
   worker2:
-    image: apache/spark:3.5.1
+    image: apache/spark:3.5.3
     container_name: cs511-fa25-mp1-hdfs-spark-worker2-1
     hostname: worker2
     volumes:
