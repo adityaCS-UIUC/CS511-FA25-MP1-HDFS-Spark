@@ -58,5 +58,5 @@ val formatted = ranks
 
 formatted.collect().foreach{ case (n,v) => println(s"$n,%.3f".format(v)) 
 
-sys.exit(0)
 }
+sys.exit(0)

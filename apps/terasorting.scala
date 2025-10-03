@@ -12,6 +12,5 @@ val cleaned = lines
 
 val out = cleaned.sortBy({ case (y,s) => (-y, s) })
 out.collect().foreach{ case (y,s) => println(s"$y,$s") 
-
-sys.exit(0)
 }
+sys.exit(0)
