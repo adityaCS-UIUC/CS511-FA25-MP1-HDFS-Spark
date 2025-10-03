@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 # test_hdfs.sh
 function test_hdfs_q1() {
@@ -78,7 +77,8 @@ function test_spark_q4() {
 }
 
 function test_terasorting() {
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '
+  # Load sample, push to HDFS, run the Scala, print ONLY "year,serial" lines
+  docker compose -f cs511p1-compose.yaml exec main bash -c '
     set -euo pipefail
     mkdir -p /tmp/caps
     cat > /tmp/caps/caps.csv <<EOF
@@ -87,14 +87,17 @@ function test_terasorting() {
 2023,0829-0914-00120
 2050,9999-9999-99999
 EOF
-    /opt/hadoop/bin/hdfs dfs -mkdir -p /datasets
-    /opt/hadoop/bin/hdfs dfs -put -f /tmp/caps/caps.csv /datasets/caps.csv
-    spark-shell --master spark://main:7077 -i /apps/terasorting.scala 2>/dev/null | grep -E "^[0-9]{4},"
+    hdfs dfs -mkdir -p /datasets
+    hdfs dfs -put -f /tmp/caps/caps.csv /datasets/caps.csv
+    # Use -i to run the script and filter out REPL/log noise
+    spark-shell --master spark://main:7077 -i /apps/terasorting.scala 2>/dev/null \
+      | grep -E "^[0-9]{4},"
   '
 }
 
 function test_pagerank() {
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '
+  # Extra credit: tiny graph → print ONLY "node,rank" lines
+  docker compose -f cs511p1-compose.yaml exec main bash -c '
     set -euo pipefail
     mkdir -p /tmp/pr
     cat > /tmp/pr/pagerank_edges.csv <<EOF
@@ -111,12 +114,12 @@ function test_pagerank() {
 11,5
 4,1
 EOF
-    /opt/hadoop/bin/hdfs dfs -mkdir -p /datasets
-    /opt/hadoop/bin/hdfs dfs -put -f /tmp/pr/pagerank_edges.csv /datasets/pagerank_edges.csv
-    spark-shell --master spark://main:7077 -i /apps/pagerank.scala 2>/dev/null | grep -E "^[0-9]+,"
+    hdfs dfs -mkdir -p /datasets
+    hdfs dfs -put -f /tmp/pr/pagerank_edges.csv /datasets/pagerank_edges.csv
+    spark-shell --master spark://main:7077 -i /apps/pagerank.scala 2>/dev/null \
+      | grep -E "^[0-9]+,"
   '
 }
-
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'

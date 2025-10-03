@@ -1,30 +1,23 @@
+version: "2.4"
 services:
-  main:
-    image: cs511p1-main
-    build:
-      context: .
-      dockerfile: cs511p1-main.Dockerfile
-    container_name: cs511-fa25-mp1-hdfs-spark-main-1
-    hostname: main
-    networks: [mpnet]
-  worker1:
-    image: cs511p1-worker
-    build:
-      context: .
-      dockerfile: cs511p1-worker.Dockerfile
-    container_name: cs511-fa25-mp1-hdfs-spark-worker1-1
-    hostname: worker1
-    networks: [mpnet]
-    depends_on: [main]
-  worker2:
-    image: cs511p1-worker
-    build:
-      context: .
-      dockerfile: cs511p1-worker.Dockerfile
-    container_name: cs511-fa25-mp1-hdfs-spark-worker2-1
-    hostname: worker2
-    networks: [mpnet]
-    depends_on: [main]
-
-networks:
-  mpnet: {}
+   main:
+      image: cs511p1-main
+      hostname: main
+      tty: true
+      stdin_open: true
+      ports:
+        - 8080:8080
+        - 8081:8081
+      command: ["/bin/bash", "start-main.sh"]
+   worker1:
+      image: cs511p1-worker
+      hostname: worker1
+      tty: true
+      stdin_open: true
+      command: ["/bin/bash", "start-worker.sh"]
+   worker2:
+      image: cs511p1-worker
+      hostname: worker2
+      tty: true
+      stdin_open: true
+      command: ["/bin/bash", "start-worker.sh"]

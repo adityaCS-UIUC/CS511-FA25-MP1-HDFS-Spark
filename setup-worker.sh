@@ -4,12 +4,16 @@ export JAVA_HOME=/usr/local/openjdk-8
 
 ####################################################################################
 # DO NOT MODIFY THE BELOW ##########################################################
+
 ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
 cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 chmod 0600 ~/.ssh/authorized_keys
+
 # DO NOT MODIFY THE ABOVE ##########################################################
 ####################################################################################
 
+# Setup HDFS/Spark worker here
+# Hadoop config mirrors main (fs.defaultFS points to main)
 cat > /opt/hadoop/etc/hadoop/core-site.xml <<'XML'
 <configuration>
   <property>
@@ -34,6 +38,7 @@ XML
 
 mkdir -p /data/dn
 
+# Spark worker config
 mkdir -p /opt/spark/conf
 cat > /opt/spark/conf/spark-env.sh <<'SH'
 export SPARK_WORKER_CORES=2
