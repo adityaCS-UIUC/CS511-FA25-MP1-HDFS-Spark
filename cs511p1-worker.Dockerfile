@@ -11,4 +11,3 @@ RUN /bin/bash setup-worker.sh
 
 COPY ./start-worker.sh ./start-worker.sh
 CMD ["/bin/bash", "start-worker.sh"]
-
