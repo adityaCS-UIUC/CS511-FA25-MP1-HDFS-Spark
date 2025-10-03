@@ -11,4 +11,7 @@ val cleaned = lines
   .filter{ case (year, _) => year <= 2025 }
 
 val out = cleaned.sortBy({ case (y,s) => (-y, s) })
-out.collect().foreach{ case (y,s) => println(s"$y,$s") }
+out.collect().foreach{ case (y,s) => println(s"$y,$s") 
+
+sys.exit(0)
+}

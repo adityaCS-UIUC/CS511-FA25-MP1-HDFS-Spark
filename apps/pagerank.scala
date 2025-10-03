@@ -56,4 +56,7 @@ val formatted = ranks
   .map{ case (n,v) => (n, BigDecimal(v).setScale(3, BigDecimal.RoundingMode.HALF_UP).toDouble) }
   .sortBy({ case (n,v) => (-v, n) })
 
-formatted.collect().foreach{ case (n,v) => println(s"$n,%.3f".format(v)) }
+formatted.collect().foreach{ case (n,v) => println(s"$n,%.3f".format(v)) 
+
+sys.exit(0)
+}
