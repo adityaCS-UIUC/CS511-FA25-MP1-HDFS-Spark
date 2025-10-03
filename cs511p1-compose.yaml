@@ -1,3 +1,4 @@
+version: "2.4"
 services:
    main:
       image: cs511p1-main
