@@ -77,7 +77,7 @@ function test_spark_q4() {
 }
 
 function test_terasorting() {
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '
+  timeout 120s docker compose -f cs511p1-compose.yaml exec -T main bash -lc '
     set -euo pipefail
     /opt/hadoop/bin/hdfs dfs -mkdir -p /datasets
     cat > /tmp/caps.csv <<EOF
@@ -87,12 +87,16 @@ function test_terasorting() {
 2050,9999-9999-99999
 EOF
     /opt/hadoop/bin/hdfs dfs -put -f /tmp/caps.csv /datasets/caps.csv
-    /opt/spark/bin/spark-shell --master spark://main:7077 -i /apps/terasorting.scala | grep -E "^[0-9]{4},"
+
+    # feed script then quit the REPL
+    ( cat /apps/terasorting.scala; echo ":quit" ) \
+      | /opt/spark/bin/spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false \
+      | grep -E "^[0-9]{4},"
   ' 2>/dev/null
 }
 
 function test_pagerank() {
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '
+  timeout 180s docker compose -f cs511p1-compose.yaml exec -T main bash -lc '
     set -euo pipefail
     /opt/hadoop/bin/hdfs dfs -mkdir -p /datasets
     cat > /tmp/pagerank_edges.csv <<EOF
@@ -110,7 +114,10 @@ function test_pagerank() {
 4,1
 EOF
     /opt/hadoop/bin/hdfs dfs -put -f /tmp/pagerank_edges.csv /datasets/pagerank_edges.csv
-    /opt/spark/bin/spark-shell --master spark://main:7077 -i /apps/pagerank.scala | grep -E "^[0-9]+,"
+
+    ( cat /apps/pagerank.scala; echo ":quit" ) \
+      | /opt/spark/bin/spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false \
+      | grep -E "^[0-9]+,"
   ' 2>/dev/null
 }
 
