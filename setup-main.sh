@@ -1,6 +1,6 @@
 #!/bin/bash
-set -euo pipefail
-export JAVA_HOME=/usr/local/openjdk-8
+export JAVA_HOME=/usr/local/openjdk-8/jre
+HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
 ####################################################################################
 # DO NOT MODIFY THE BELOW ##########################################################
@@ -13,44 +13,51 @@ chmod 0600 ~/.ssh/authorized_keys
 ####################################################################################
 
 # Setup HDFS/Spark main here
-cat > /opt/hadoop/etc/hadoop/core-site.xml <<'XML'
+cat > ${HADOOP_CONF_DIR}/core-site.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-  <property>
-    <name>fs.defaultFS</name>
-    <value>hdfs://main:9000</value>
-  </property>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://main:9000</value>
+    </property>
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/tmp/hadoop-data</value>
+    </property>
 </configuration>
-XML
+EOF
 
-cat > /opt/hadoop/etc/hadoop/hdfs-site.xml <<'XML'
+# --- 2. hdfs-site.xml ---
+cat > ${HADOOP_CONF_DIR}/hdfs-site.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-  <property>
-    <name>dfs.replication</name>
-    <value>3</value>
-  </property>
-  <property>
-    <name>dfs.namenode.name.dir</name>
-    <value>file:///data/nn</value>
-  </property>
-  <property>
-    <name>dfs.datanode.data.dir</name>
-    <value>file:///data/dn</value>
-  </property>
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>file:///tmp/hadoop-data/dfs/namenode</value>
+    </property>
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>file:///tmp/hadoop-data/dfs/datanode</value>
+    </property>
+    <property>
+        <name>dfs.replication</name>
+        <value>2</value>
+    </property>
 </configuration>
-XML
+EOF
 
-mkdir -p /data/nn /data/dn
+# --- 3. workers file ---
+cat > ${HADOOP_CONF_DIR}/workers <<EOF
+worker1
+worker2
+EOF
 
-# Workers file (Spark) and slaves (Hadoop 3 uses workers file too)
-printf "main\nworker1\nworker2\n" | tee /opt/hadoop/etc/hadoop/workers >/dev/null
-printf "main\nworker1\nworker2\n" | tee /opt/spark/conf/workers >/dev/null
 
-# Spark config
-mkdir -p /opt/spark/conf
-cat > /opt/spark/conf/spark-env.sh <<'SH'
-export SPARK_MASTER_HOST=main
-export SPARK_MASTER_PORT=7077
-export SPARK_WORKER_CORES=2
-export SPARK_WORKER_MEMORY=1G
-SH
-chmod +x /opt/spark/conf/spark-env.sh
+JAVA_PATH="/usr/local/openjdk-8/jre"
+# --- 4. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
+# Use sed to replace the default JAVA_HOME placeholder
+# --- 4. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
+# Use sed to replace the default JAVA_HOME placeholder
+echo "export JAVA_HOME=/usr/local/openjdk-8/jre" >> ${HADOOP_CONF_DIR}/hadoop-env.sh

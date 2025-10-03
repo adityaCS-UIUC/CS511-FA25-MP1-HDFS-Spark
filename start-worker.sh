@@ -1,5 +1,4 @@
 #!/bin/bash
-set -euo pipefail
 
 ####################################################################################
 # DO NOT MODIFY THE BELOW ##########################################################
@@ -12,13 +11,13 @@ ssh-add ~/.ssh/shared_rsa
 ####################################################################################
 
 # Start HDFS/Spark worker here
-export JAVA_HOME=/usr/local/openjdk-8
-export HADOOP_HOME=/opt/hadoop
-export SPARK_HOME=/opt/spark
-export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$PATH
+export JAVA_HOME="/usr/local/openjdk-8/jre"
 
-# Start DN and Spark worker (also started remotely by main; double-start is safe/no-op)
-hdfs --daemon start datanode || true
-${SPARK_HOME}/sbin/start-worker.sh spark://main:7077 || true
+export HDFS_DATANODE_USER="root"
+# bash
+echo "Starting DataNode..."
+# Start the DataNode service
+$HADOOP_HOME/sbin/hadoop-daemon.sh start datanode
 
-exec bash
+# Keep the container running
+tail -f /dev/null

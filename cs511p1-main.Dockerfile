@@ -10,6 +10,6 @@ COPY ./setup-main.sh ./setup-main.sh
 RUN /bin/bash setup-main.sh
 
 COPY ./start-main.sh ./start-main.sh
-COPY ./resources ./resources
-COPY ./apps ./apps
 CMD ["/bin/bash", "start-main.sh"]
+
+

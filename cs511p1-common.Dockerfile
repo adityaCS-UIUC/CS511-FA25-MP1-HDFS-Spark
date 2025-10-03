@@ -16,19 +16,26 @@ RUN ssh-keygen -t rsa -P '' -f ~/.ssh/shared_rsa -C common && \
 ####################################################################################
 
 # Setup HDFS/Spark resources here
-# ---------- HDFS & Spark prerequisites ----------
-ENV JAVA_HOME=/usr/local/openjdk-8
-ENV HADOOP_VERSION=3.3.6
-ENV SPARK_VERSION=3.4.1
-ENV HADOOP_HOME=/opt/hadoop
-ENV SPARK_HOME=/opt/spark
-ENV PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$PATH
 
-# Download Hadoop + Spark once (cacheable layers)
-RUN curl -fsSL https://downloads.apache.org/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz \
-    | tar -xz -C /opt && ln -s /opt/hadoop-${HADOOP_VERSION} ${HADOOP_HOME}
+# Set Hadoop version
+ENV HADOOP_VERSION 3.3.6
+ENV HADOOP_HOME /opt/hadoop
 
-RUN curl -fsSL https://archive.apache.org/dist/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop3.tgz \
-    | tar -xz -C /opt && ln -s /opt/spark-${SPARK_VERSION}-bin-hadoop3 ${SPARK_HOME}
-    
-RUN echo "export JAVA_HOME=${JAVA_HOME}" >> ${HADOOP_HOME}/etc/hadoop/hadoop-env.sh
+# Install dependencies
+RUN apt-get update && \
+    apt-get install -y wget && \
+    wget https://downloads.apache.org/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz && \
+    tar -xvzf hadoop-$HADOOP_VERSION.tar.gz -C /opt && \
+    ln -s /opt/hadoop-$HADOOP_VERSION /opt/hadoop && \
+    rm hadoop-$HADOOP_VERSION.tar.gz
+
+# Set environment variables
+ENV PATH $HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
+ENV HADOOP_CONF_DIR $HADOOP_HOME/etc/hadoop
+
+# Create necessary HDFS directories and set permissions
+RUN mkdir -p /tmp/hadoop-data/dfs/namenode \
+           /tmp/hadoop-data/dfs/datanode \
+           /tmp/hadoop-data/tmp \
+           $HADOOP_HOME/logs
+RUN chown -R root:root /tmp/hadoop-data $HADOOP_HOME

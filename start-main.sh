@@ -1,5 +1,4 @@
 #!/bin/bash
-set -euo pipefail
 
 ####################################################################################
 # DO NOT MODIFY THE BELOW ##########################################################
@@ -15,30 +14,23 @@ ssh-copy-id -i ~/.ssh/id_rsa -o 'IdentityFile ~/.ssh/shared_rsa' -o StrictHostKe
 ####################################################################################
 
 # Start HDFS/Spark main here
-export JAVA_HOME=/usr/local/openjdk-8
-export HADOOP_HOME=/opt/hadoop
-export SPARK_HOME=/opt/spark
-export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$PATH
 
-# Format NN once (idempotent)
-if [ ! -f /data/nn/current/VERSION ]; then
-  hdfs namenode -format -force -nonInteractive
+# bash
+export JAVA_HOME="/usr/local/openjdk-8/jre"
+
+export HDFS_NAMENODE_USER="root"
+export HDFS_DATANODE_USER="root"
+export HDFS_SECONDARYNAMENODE_USER="root"
+
+# Check if NameNode is formatted. Format only if it's the first time.
+if [ ! -d "/tmp/hadoop-data/dfs/namenode/current" ]; then
+    echo "Formatting NameNode..."
+    hdfs namenode -format -force -nonInteractive
 fi
 
-# Start HDFS daemons: NN on main, DN on all three
-hdfs --daemon start namenode
-hdfs --daemon start datanode
-ssh worker1 -t "hdfs --daemon start datanode"
-ssh worker2 -t "hdfs --daemon start datanode"
+echo "Starting HDFS cluster (NameNode on main, DataNodes on workers)..."
+# Start NameNode on main and DataNodes on worker1 and worker2 via SSH
+$HADOOP_HOME/sbin/start-dfs.sh
 
-# Give HDFS a sec to stabilize
-sleep 3
-
-# Start Spark Standalone: master + worker on all three
-${SPARK_HOME}/sbin/start-master.sh
-${SPARK_HOME}/sbin/start-worker.sh spark://main:7077
-ssh worker1 -t "${SPARK_HOME}/sbin/start-worker.sh spark://main:7077"
-ssh worker2 -t "${SPARK_HOME}/sbin/start-worker.sh spark://main:7077"
-
-# Keep container alive & interactive
-exec bash
+# Keep the container running
+tail -f /dev/null
