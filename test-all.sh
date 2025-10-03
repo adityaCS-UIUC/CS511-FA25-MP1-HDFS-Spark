@@ -1,5 +1,20 @@
 #!/bin/bash
-
+# Resolve spark-shell inside the "main" container, no assumptions.
+SPARK_WRAPPER='
+set -e
+resolve() {
+  for p in $(command -v spark-shell 2>/dev/null || true) /opt/spark/bin/spark-shell /spark/bin/spark-shell; do
+    if [ -x "$p" ]; then echo "$p"; return 0; fi
+  done
+  echo "__NO_SPARK__"
+}
+SPARK=$(resolve)
+if [ "$SPARK" = "__NO_SPARK__" ]; then
+  echo "__ERR__:spark-shell not found in container PATH or /opt/spark/bin or /spark/bin"
+  exit 127
+fi
+"$SPARK" --master spark://main:7077 --conf spark.ui.showConsoleProgress=false
+'
 # test_hdfs.sh
 function test_hdfs_q1() {
     docker compose -f cs511p1-compose.yaml exec main hdfs dfsadmin -report >&2
@@ -78,9 +93,8 @@ function test_spark_q4() {
 
 # --- Part 3: Tera Sorting demo (20 pts) ---
 function test_terasorting() {
-  # Stage /datasets/caps.csv *via Spark*, not hdfs CLI
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc '
-spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false << "EOF"
+  # 1) Stage /datasets/caps.csv using Spark (no hdfs CLI)
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "$SPARK_WRAPPER" << "EOF" >/dev/null 2>/dev/null
 val spark = org.apache.spark.sql.SparkSession.builder.getOrCreate()
 val sc = spark.sparkContext
 val data = Seq(
@@ -90,7 +104,7 @@ val data = Seq(
   "2050,9999-9999-99999"
 )
 import org.apache.hadoop.fs.{FileSystem, Path}
-val fs = FileSystem.get(sc.hadoopConfiguration)
+val fs  = FileSystem.get(sc.hadoopConfiguration)
 val tmp = new Path("hdfs://main:9000/datasets/caps.csv.tmp")
 val fin = new Path("hdfs://main:9000/datasets/caps.csv")
 sc.parallelize(data).repartition(1).saveAsTextFile(tmp.toString)
@@ -98,19 +112,16 @@ if (fs.exists(fin)) fs.delete(fin, true)
 fs.rename(tmp, fin)
 sys.exit(0)
 EOF
-' >/dev/null
 
-  # Run your scala with stdin; grep only the clean "year,serial" lines
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc \
-    'spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false 2>/dev/null' \
-    < apps/terasorting.scala | grep -E "^[0-9]+,.*$"
+  # 2) Run your Scala app by piping it to spark-shell; print only clean lines
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "$SPARK_WRAPPER" \
+    < apps/terasorting.scala 2>/dev/null | grep -E "^[0-9]+,.*$"
 }
 
 # --- Part 4: PageRank extra credit (20 pts) ---
 function test_pagerank() {
-  # Stage /datasets/pagerank_edges.csv *via Spark*
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc '
-spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false << "EOF"
+  # 1) Stage /datasets/pagerank_edges.csv using Spark
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "$SPARK_WRAPPER" << "EOF" >/dev/null 2>/dev/null
 val spark = org.apache.spark.sql.SparkSession.builder.getOrCreate()
 val sc = spark.sparkContext
 val edges = Seq(
@@ -118,7 +129,7 @@ val edges = Seq(
   "7,5","8,5","9,5","10,5","11,5","4,1"
 )
 import org.apache.hadoop.fs.{FileSystem, Path}
-val fs = FileSystem.get(sc.hadoopConfiguration)
+val fs  = FileSystem.get(sc.hadoopConfiguration)
 val tmp = new Path("hdfs://main:9000/datasets/pagerank_edges.csv.tmp")
 val fin = new Path("hdfs://main:9000/datasets/pagerank_edges.csv")
 sc.parallelize(edges).repartition(1).saveAsTextFile(tmp.toString)
@@ -126,12 +137,10 @@ if (fs.exists(fin)) fs.delete(fin, true)
 fs.rename(tmp, fin)
 sys.exit(0)
 EOF
-' >/dev/null
 
-  # Run your PageRank scala via stdin; print only "node,rank" lines like "2,0.350"
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc \
-    'spark-shell --master spark://main:7077 --conf spark.ui.showConsoleProgress=false 2>/dev/null' \
-    < apps/pagerank.scala | grep -E "^[0-9]+,[0-9]+\.[0-9]{3}$"
+  # 2) Run your PageRank; only emit "node,rank" like 2,0.350
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "$SPARK_WRAPPER" \
+    < apps/pagerank.scala 2>/dev/null | grep -E "^[0-9]+,[0-9]+\.[0-9]{3}$"
 }
 
 GREEN='\033[0;32m'
