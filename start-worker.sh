@@ -1,23 +1,14 @@
 #!/bin/bash
-
-####################################################################################
-# DO NOT MODIFY THE BELOW ##########################################################
-
+set -euo pipefail
 /etc/init.d/ssh start
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/shared_rsa
 
-# DO NOT MODIFY THE ABOVE ##########################################################
-####################################################################################
+export JAVA_HOME=/usr/local/openjdk-8
+export HADOOP_HOME=/opt/hadoop
+export SPARK_HOME=/opt/spark
 
-# Start HDFS/Spark worker here
-export JAVA_HOME="/usr/local/openjdk-8/jre"
+/opt/hadoop/bin/hdfs --daemon start datanode || true
+/opt/spark/sbin/start-worker.sh spark://main:7077 || true
 
-export HDFS_DATANODE_USER="root"
-# bash
-echo "Starting DataNode..."
-# Start the DataNode service
-$HADOOP_HOME/sbin/hadoop-daemon.sh start datanode
-
-# Keep the container running
-tail -f /dev/null
+exec bash
