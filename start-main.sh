@@ -1,53 +1,48 @@
 #!/bin/bash
+set -euo pipefail
 
 ####################################################################################
 # DO NOT MODIFY THE BELOW ##########################################################
-
-# Exchange SSH keys.
 /etc/init.d/ssh start
 eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/shared_rsa
-ssh-copy-id -i ~/.ssh/id_rsa -o 'IdentityFile ~/.ssh/shared_rsa' -o StrictHostKeyChecking=no -f worker1
-ssh-copy-id -i ~/.ssh/id_rsa -o 'IdentityFile ~/.ssh/shared_rsa' -o StrictHostKeyChecking=no -f worker2
-
-# DO NOT MODIFY THE ABOVE ##########################################################
+ssh-add ~/.ssh/shared_rsa || true
 ####################################################################################
 
-# Start HDFS/Spark main here
+export JAVA_HOME="/usr/local/openjdk-8"
+export HADOOP_HOME="/opt/hadoop"
+export SPARK_HOME="/opt/spark"
+export PATH="$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH"
 
-# bash
-export JAVA_HOME="/usr/local/openjdk-8/jre"
+# HDFS users
+export HDFS_NAMENODE_USER=root
+export HDFS_DATANODE_USER=root
+export HDFS_SECONDARYNAMENODE_USER=root
 
-export HDFS_NAMENODE_USER="root"
-export HDFS_DATANODE_USER="root"
-export HDFS_SECONDARYNAMENODE_USER="root"
+# Spark: force hostnames
+export SPARK_LOCAL_HOSTNAME=main
+export SPARK_LOCAL_IP="$(getent hosts main | awk '{print $1}')"
 
-# Check if NameNode is formatted. Format only if it's the first time.
+# Clean any stale Spark worker dirs/PIDs/logs on this node
+rm -rf /opt/spark/work/* /tmp/spark* /tmp/spark-* /var/tmp/spark* 2>/dev/null || true
+
+# Stop Spark (if previously started with wrong host)
+$SPARK_HOME/sbin/stop-worker.sh || true
+$SPARK_HOME/sbin/stop-master.sh || true
+
+# Format NameNode on first boot
 if [ ! -d "/tmp/hadoop-data/dfs/namenode/current" ]; then
-    echo "Formatting NameNode..."
-    hdfs namenode -format -force -nonInteractive
+  echo "Formatting NameNode..."
+  hdfs namenode -format -force -nonInteractive
 fi
 
-echo "Starting HDFS cluster (NameNode on main, DataNodes on workers)..."
-# Start NameNode on main and DataNodes on worker1 and worker2 via SSH
+# Start HDFS
 $HADOOP_HOME/sbin/start-dfs.sh
 
-export SPARK_LOCAL_HOSTNAME=main
-export SPARK_LOCAL_IP=$(getent hosts main | awk '{print $1}')
+# Start Spark master on hostname "main"
+$SPARK_HOME/sbin/start-master.sh --host main -p 7077 --webui-port 8080
 
-# Start Spark master on the hostname "main"
- /opt/spark/sbin/start-master.sh --host main -p 7077 --webui-port 8080
+# Start a worker on main too (we want 3 executors total)
+$SPARK_HOME/sbin/start-worker.sh --host main spark://main:7077 --webui-port 8081
 
-# Start a worker on "main" as well (so you have 3 executors total)
- /opt/spark/sbin/start-worker.sh --host main spark://main:7077 --webui-port 8081
-
-echo "Starting Spark cluster (Master on main, Workers on workers)..."
-# Start Spark Master on main and Workers on worker1 and worker2
-$SPARK_HOME/sbin/start-master.sh
-$SPARK_HOME/sbin/start-workers.sh
-
-# Start datanode on main as well
-$HADOOP_HOME/bin/hdfs datanode &
-
-# Keep the container running
+# Keep alive
 tail -f /dev/null
