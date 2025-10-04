@@ -10,6 +10,9 @@ ssh-add ~/.ssh/shared_rsa
 # DO NOT MODIFY THE ABOVE ##########################################################
 ####################################################################################
 
+export SPARK_LOCAL_HOSTNAME="$(hostname)"
+export SPARK_LOCAL_IP=$(getent hosts "$(hostname)" | awk '{print $1}')
+
 # Start HDFS/Spark worker here
 export JAVA_HOME="/usr/local/openjdk-8/jre"
 
