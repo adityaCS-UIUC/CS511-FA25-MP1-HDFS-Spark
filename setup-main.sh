@@ -59,6 +59,27 @@ EOF
 JAVA_PATH="/usr/local/openjdk-8/jre"
 # --- 4. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
 # Use sed to replace the default JAVA_HOME placeholder
-# --- 4. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
-# Use sed to replace the default JAVA_HOME placeholder
 echo "export JAVA_HOME=/usr/local/openjdk-8/jre" >> ${HADOOP_CONF_DIR}/hadoop-env.sh
+
+# Setup Spark configuration
+mkdir -p ${SPARK_HOME}/conf
+cat > ${SPARK_HOME}/conf/spark-defaults.conf <<EOF
+spark.master                     spark://main:7077
+spark.executor.memory            1g
+spark.driver.memory              1g
+spark.serializer                 org.apache.spark.serializer.KryoSerializer
+EOF
+
+# Setup Spark environment
+cat > ${SPARK_HOME}/conf/spark-env.sh <<EOF
+export JAVA_HOME=/usr/local/openjdk-8/jre
+export HADOOP_CONF_DIR=${HADOOP_CONF_DIR}
+export SPARK_LOCAL_IP=main
+EOF
+
+# Create Spark workers file
+cat > ${SPARK_HOME}/conf/workers <<EOF
+main
+worker1
+worker2
+EOF

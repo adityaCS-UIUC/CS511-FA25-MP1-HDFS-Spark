@@ -17,20 +17,26 @@ RUN ssh-keygen -t rsa -P '' -f ~/.ssh/shared_rsa -C common && \
 
 # Setup HDFS/Spark resources here
 
-# Set Hadoop version
+# Set Hadoop and Spark versions
 ENV HADOOP_VERSION 3.3.6
+ENV SPARK_VERSION 3.3.0
 ENV HADOOP_HOME /opt/hadoop
+ENV SPARK_HOME /opt/spark
 
 # Install dependencies
 RUN apt-get update && \
-    apt-get install -y wget && \
+    apt-get install -y wget curl && \
     wget https://downloads.apache.org/hadoop/common/hadoop-$HADOOP_VERSION/hadoop-$HADOOP_VERSION.tar.gz && \
     tar -xvzf hadoop-$HADOOP_VERSION.tar.gz -C /opt && \
     ln -s /opt/hadoop-$HADOOP_VERSION /opt/hadoop && \
-    rm hadoop-$HADOOP_VERSION.tar.gz
+    rm hadoop-$HADOOP_VERSION.tar.gz && \
+    wget https://archive.apache.org/dist/spark/spark-$SPARK_VERSION/spark-$SPARK_VERSION-bin-hadoop3.tgz && \
+    tar -xzf spark-$SPARK_VERSION-bin-hadoop3.tgz -C /opt && \
+    ln -s /opt/spark-$SPARK_VERSION-bin-hadoop3 /opt/spark && \
+    rm spark-$SPARK_VERSION-bin-hadoop3.tgz
 
 # Set environment variables
-ENV PATH $HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
+ENV PATH $HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
 ENV HADOOP_CONF_DIR $HADOOP_HOME/etc/hadoop
 
 # Create necessary HDFS directories and set permissions
