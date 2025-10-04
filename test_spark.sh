@@ -74,11 +74,13 @@ NC='\033[0m'
 mkdir -p out
 
 echo -n "Testing Spark Q1 ..."
-if test_spark_q1 && grep -q "worker1" out/test_spark_q1.out && grep -q "worker2" out/test_spark_q1.out; then
-  echo -e " \033[0;32mPASS\033[0m"
+test_spark_q1 > out/test_spark_q1.out 2>&1
+if grep -E -q "Seq\[String\] = List\([0-9\.:]*, [0-9\.:]*, [0-9\.:]*\)" out/test_spark_q1.out; then
+    echo -e " ${GREEN}PASS${NC}"
 else
-  echo -e " \033[0;31mFAIL\033[0m"
-  exit 1
+    echo -e " ${RED}FAIL${NC}"
+    print_score "0 point"
+    exit 1
 fi
 
 echo -n "Testing Spark Q2 ..."
