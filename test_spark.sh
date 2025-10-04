@@ -2,21 +2,22 @@
 
 # backup
 function test_spark_q1() {
-  # Run a tiny job so executors spin up, then print executor endpoints one-per-line
-  # Example output lines: "172.19.0.3:41923" or "worker2:38267"
+  # Everything (spark-shell + mapping) runs INSIDE the container.
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     /opt/spark/bin/spark-shell --master spark://main:7077 -e "
+      // warm up so executors register
       sc.parallelize(1 to 1000,3).count
+      // list executor endpoints (host:port)
       sc.getExecutorMemoryStatus.keys.foreach(println)
-    " 2>/dev/null
-  ' \
-  | awk -F: "{print \$1}" \
-  | while read -r H; do
-      # Map IPs -> container hostnames via Docker DNS; if already a name, this preserves it.
-      getent hosts "\$H" | awk "{print \\\$2}" 2>/dev/null || echo "\$H"
-    done \
-  | sort -u \
-  | tee out/test_spark_q1.out >/dev/null
+    " 2>/dev/null \
+    | awk -F: "{print \$1}" \
+    | while read -r H; do
+        # map IPs or names -> canonical container hostname using *container* DNS
+        getent hosts \"\$H\" | awk "{print \\\$2}" 2>/dev/null || echo \"\$H\"
+      done \
+    | sort -u \
+    | egrep -x "worker1|worker2"
+  ' > out/test_spark_q1.out 2>&1
 }
 
 function test_spark_q2() {
