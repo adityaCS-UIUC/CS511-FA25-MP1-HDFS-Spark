@@ -1,0 +1,11 @@
+time="2025-10-03T19:36:56-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ cs511-fall2025-p1-main-1 copy resources/fox.txt to cs511-fall2025-p1-main-1:/test_fox.txt Copying
+ cs511-fall2025-p1-main-1 copy resources/fox.txt to cs511-fall2025-p1-main-1:/test_fox.txt Copied
+time="2025-10-03T19:36:56-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
++ hdfs dfs -mkdir -p /test
+2025-10-04 00:36:57,125 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
++ hdfs dfs -put -f /test_fox.txt /test/fox.txt
+2025-10-04 00:36:57,596 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
++ hdfs dfs -cat /test/fox.txt
+2025-10-04 00:36:58,208 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+The quick brown fox jumps over the lazy dog

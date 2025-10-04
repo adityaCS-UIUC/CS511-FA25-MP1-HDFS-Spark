@@ -1,19 +1,23 @@
 #!/bin/bash
-set -euo pipefail
 
-# SSH agent for intra-cluster ops
+####################################################################################
+# DO NOT MODIFY THE BELOW ##########################################################
+
 /etc/init.d/ssh start
 eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/shared_rsa || true
+ssh-add ~/.ssh/shared_rsa
 
-export JAVA_HOME=/usr/local/openjdk-8
-export HDFS_DATANODE_USER=root
+# DO NOT MODIFY THE ABOVE ##########################################################
+####################################################################################
 
-echo "Starting HDFS DataNode ..."
-${HADOOP_HOME}/sbin/hadoop-daemon.sh start datanode
+# Start HDFS/Spark worker here
+export JAVA_HOME="/usr/local/openjdk-8/jre"
 
-echo "Starting Spark Worker (to master spark://main:7077) ..."
-/opt/spark/sbin/start-worker.sh spark://main:7077
+export HDFS_DATANODE_USER="root"
+# bash
+echo "Starting DataNode..."
+# Start the DataNode service
+$HADOOP_HOME/sbin/hadoop-daemon.sh start datanode
 
-# Keep container alive
+# Keep the container running
 tail -f /dev/null

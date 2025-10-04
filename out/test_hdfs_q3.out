@@ -1,0 +1,77 @@
+time="2025-10-03T19:36:58-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
++ hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://main:9000 -op create -threads 100 -files 10000
+2025-10-04 00:36:58,886 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2025-10-04 00:36:59,133 INFO namenode.NNThroughputBenchmark: Starting benchmark: create
+2025-10-04 00:36:59,161 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for create
+2025-10-04 00:36:59,164 INFO namenode.NNThroughputBenchmark: Log level = ERROR
+2025-10-04 00:36:59,186 INFO namenode.NNThroughputBenchmark: Starting 10000 create(s).
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: 
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: --- create inputs ---
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: nrFiles = 10000
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: nrThreads = 100
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: --- create stats  ---
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: # operations: 10000
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: Elapsed Time: 384
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark:  Ops per sec: 26041.666666666668
+2025-10-04 00:36:59,583 INFO namenode.NNThroughputBenchmark: Average Time: 3
++ hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://main:9000 -op open -threads 100 -files 10000
+2025-10-04 00:36:59,842 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2025-10-04 00:37:00,091 INFO namenode.NNThroughputBenchmark: Starting benchmark: open
+2025-10-04 00:37:00,118 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for create
+2025-10-04 00:37:00,120 INFO namenode.NNThroughputBenchmark: Log level = ERROR
+2025-10-04 00:37:00,142 INFO namenode.NNThroughputBenchmark: Starting 10000 create(s).
+2025-10-04 00:37:00,793 INFO namenode.NNThroughputBenchmark: Created 10000 files.
+2025-10-04 00:37:00,793 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for open
+2025-10-04 00:37:00,803 INFO namenode.NNThroughputBenchmark: Log level = ERROR
+2025-10-04 00:37:00,803 INFO namenode.NNThroughputBenchmark: Starting 10000 open(s).
+2025-10-04 00:37:01,011 INFO namenode.NNThroughputBenchmark: 
+2025-10-04 00:37:01,011 INFO namenode.NNThroughputBenchmark: --- open inputs ---
+2025-10-04 00:37:01,011 INFO namenode.NNThroughputBenchmark: nrFiles = 10000
+2025-10-04 00:37:01,011 INFO namenode.NNThroughputBenchmark: nrThreads = 100
+2025-10-04 00:37:01,011 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2025-10-04 00:37:01,012 INFO namenode.NNThroughputBenchmark: --- open stats  ---
+2025-10-04 00:37:01,012 INFO namenode.NNThroughputBenchmark: # operations: 10000
+2025-10-04 00:37:01,012 INFO namenode.NNThroughputBenchmark: Elapsed Time: 205
+2025-10-04 00:37:01,012 INFO namenode.NNThroughputBenchmark:  Ops per sec: 48780.48780487805
+2025-10-04 00:37:01,012 INFO namenode.NNThroughputBenchmark: Average Time: 1
++ hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://main:9000 -op delete -threads 100 -files 10000
+2025-10-04 00:37:01,359 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2025-10-04 00:37:01,601 INFO namenode.NNThroughputBenchmark: Starting benchmark: delete
+2025-10-04 00:37:01,629 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for create
+2025-10-04 00:37:01,632 INFO namenode.NNThroughputBenchmark: Log level = ERROR
+2025-10-04 00:37:01,654 INFO namenode.NNThroughputBenchmark: Starting 10000 create(s).
+2025-10-04 00:37:02,307 INFO namenode.NNThroughputBenchmark: Created 10000 files.
+2025-10-04 00:37:02,308 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for delete
+2025-10-04 00:37:02,315 INFO namenode.NNThroughputBenchmark: Log level = ERROR
+2025-10-04 00:37:02,316 INFO namenode.NNThroughputBenchmark: Starting 10000 delete(s).
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: 
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: --- delete inputs ---
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: nrFiles = 10000
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: nrThreads = 100
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: --- delete stats  ---
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: # operations: 10000
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: Elapsed Time: 271
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark:  Ops per sec: 36900.36900369004
+2025-10-04 00:37:02,588 INFO namenode.NNThroughputBenchmark: Average Time: 2
++ hadoop org.apache.hadoop.hdfs.server.namenode.NNThroughputBenchmark -fs hdfs://main:9000 -op rename -threads 100 -files 10000
+2025-10-04 00:37:02,834 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2025-10-04 00:37:03,088 INFO namenode.NNThroughputBenchmark: Starting benchmark: rename
+2025-10-04 00:37:03,116 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for create
+2025-10-04 00:37:03,119 INFO namenode.NNThroughputBenchmark: Log level = ERROR
+2025-10-04 00:37:03,141 INFO namenode.NNThroughputBenchmark: Starting 10000 create(s).
+2025-10-04 00:37:03,760 INFO namenode.NNThroughputBenchmark: Created 10000 files.
+2025-10-04 00:37:03,760 INFO namenode.NNThroughputBenchmark: Generate 10000 intputs for rename
+2025-10-04 00:37:03,770 INFO namenode.NNThroughputBenchmark: Log level = ERROR
+2025-10-04 00:37:03,770 INFO namenode.NNThroughputBenchmark: Starting 10000 rename(s).
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: 
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: --- rename inputs ---
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: nrFiles = 10000
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: nrThreads = 100
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: nrFilesPerDir = 4
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: --- rename stats  ---
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: # operations: 10000
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: Elapsed Time: 323
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark:  Ops per sec: 30959.752321981425
+2025-10-04 00:37:04,096 INFO namenode.NNThroughputBenchmark: Average Time: 3

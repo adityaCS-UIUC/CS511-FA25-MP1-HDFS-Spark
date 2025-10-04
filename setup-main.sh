@@ -1,86 +1,64 @@
 #!/bin/bash
-set -euo pipefail
-export JAVA_HOME=/usr/local/openjdk-8
+export JAVA_HOME=/usr/local/openjdk-8/jre
+HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
-HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop
+####################################################################################
+# DO NOT MODIFY THE BELOW ##########################################################
 
-# SSH for this node
 ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
 cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
+chmod 0600 ~/.ssh/authorized_keys
 
-# core-site.xml
-cat > ${HADOOP_CONF_DIR}/core-site.xml <<'EOF'
-<?xml version="1.0"?>
+# DO NOT MODIFY THE ABOVE ##########################################################
+####################################################################################
+
+# Setup HDFS/Spark main here
+cat > ${HADOOP_CONF_DIR}/core-site.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-  <property>
-    <name>fs.defaultFS</name>
-    <value>hdfs://main:9000</value>
-  </property>
-  <property>
-    <name>io.file.buffer.size</name>
-    <value>131072</value>
-  </property>
-  <property>
-    <name>hadoop.tmp.dir</name>
-    <value>/tmp/hadoop-data/tmp</value>
-  </property>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://main:9000</value>
+    </property>
+    <property>
+        <name>hadoop.tmp.dir</name>
+        <value>/tmp/hadoop-data</value>
+    </property>
 </configuration>
 EOF
 
-# hdfs-site.xml
-cat > ${HADOOP_CONF_DIR}/hdfs-site.xml <<'EOF'
-<?xml version="1.0"?>
+# --- 2. hdfs-site.xml ---
+cat > ${HADOOP_CONF_DIR}/hdfs-site.xml <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-  <property>
-    <name>dfs.namenode.name.dir</name>
-    <value>file:///tmp/hadoop-data/dfs/namenode</value>
-  </property>
-  <property>
-    <name>dfs.datanode.data.dir</name>
-    <value>file:///tmp/hadoop-data/dfs/datanode</value>
-  </property>
-  <property>
-    <name>dfs.replication</name>
-    <value>3</value>
-  </property>
-  <property>
-    <name>dfs.permissions.enabled</name>
-    <value>false</value>
-  </property>
+    <property>
+        <name>dfs.namenode.name.dir</name>
+        <value>file:///tmp/hadoop-data/dfs/namenode</value>
+    </property>
+    <property>
+        <name>dfs.datanode.data.dir</name>
+        <value>file:///tmp/hadoop-data/dfs/datanode</value>
+    </property>
+    <property>
+        <name>dfs.replication</name>
+        <value>2</value>
+    </property>
 </configuration>
 EOF
 
-# workers (include main so we have 3 datanodes: main, worker1, worker2)
-cat > ${HADOOP_CONF_DIR}/workers <<'EOF'
+# --- 3. workers file ---
+cat > ${HADOOP_CONF_DIR}/workers <<EOF
 main
 worker1
 worker2
 EOF
 
-# mapred-site.xml (local MRv2 client, required by some Hadoop tools)
-cat > ${HADOOP_CONF_DIR}/mapred-site.xml <<'EOF'
-<?xml version="1.0"?>
-<configuration>
-  <property>
-    <name>mapreduce.framework.name</name>
-    <value>yarn</value>
-  </property>
-</configuration>
-EOF
 
-# yarn-site.xml (not strictly needed for this MP but harmless)
-cat > ${HADOOP_CONF_DIR}/yarn-site.xml <<'EOF'
-<?xml version="1.0"?>
-<configuration>
-  <property>
-    <name>yarn.nodemanager.aux-services</name>
-    <value>mapreduce_shuffle</value>
-  </property>
-</configuration>
-EOF
-
-# JAVA_HOME for Hadoop
-echo "export JAVA_HOME=/usr/local/openjdk-8" >> ${HADOOP_CONF_DIR}/hadoop-env.sh
+JAVA_PATH="/usr/local/openjdk-8/jre"
+# --- 4. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
+# Use sed to replace the default JAVA_HOME placeholder
+# --- 4. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
+# Use sed to replace the default JAVA_HOME placeholder
+echo "export JAVA_HOME=/usr/local/openjdk-8/jre" >> ${HADOOP_CONF_DIR}/hadoop-env.sh

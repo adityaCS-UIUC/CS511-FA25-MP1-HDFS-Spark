@@ -1,0 +1,7 @@
+time="2025-10-03T19:37:12-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ cs511-fall2025-p1-main-1 copy resources/active_executors.scala to cs511-fall2025-p1-main-1:/active_executors.scala Copying
+ cs511-fall2025-p1-main-1 copy resources/active_executors.scala to cs511-fall2025-p1-main-1:/active_executors.scala Copied
+time="2025-10-03T19:37:13-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
++ cat /active_executors.scala
++ spark-shell --master spark://main:7077
+bash: line 2: spark-shell: command not found
