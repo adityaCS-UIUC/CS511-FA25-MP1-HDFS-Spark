@@ -1,28 +1,23 @@
 #!/bin/bash
 
 # backup
-cp -f test_spark.sh test_spark.sh.bak
-
-awk '
-  BEGIN{in=0}
-  /^function[ \t]+test_spark_q1\(\)[ \t]*\{$/ {print; in=1;
-    print "  # Spark Q1: print only worker hostnames, one per line";
-    print "  docker compose -f cs511p1-compose.yaml exec main bash -lc '\\''";
-    print "    /opt/spark/bin/spark-shell --master spark://main:7077 -e \"";
-    print "      sc.parallelize(1 to 1000,3).count";
-    print "      val names=Array(\\\"main\\\",\\\"worker1\\\",\\\"worker2\\\")";
-    print "      val nameToIp=names.flatMap(n=>scala.util.Try(java.net.InetAddress.getByName(n).getHostAddress).toOption.map(ip=>(n,ip))).toMap";
-    print "      val ipToName=nameToIp.map(_.swap)";
-    print "      val hosts=sc.getExecutorMemoryStatus.keys.toSeq.map(_.split(\\\":\\\")(0)).distinct";
-    print "      val drv=sc.getConf.getOption(\\\"spark.driver.host\\\").map(h=>ipToName.getOrElse(h,h)).getOrElse(\\\"main\\\")";
-    print "      hosts.map(h=>ipToName.getOrElse(h,h)).distinct.filterNot(_==drv).sorted.foreach(println)";
-    print "    \" 2>/dev/null | egrep -x \\\"(worker1|worker2)\\\" | sort -u";
-    print "  '\\'' > out/test_spark_q1.out 2>&1";
-    print "  cat out/test_spark_q1.out";
-    print "  return 0"; next}
-  in==1 && /\}$/ {in=0; print; next}
-  in==0 {print}
-' test_spark.sh > test_spark.sh.tmp && mv test_spark.sh.tmp test_spark.sh && chmod +x test_spark.sh
+function test_spark_q1() {
+  # Run a tiny job so executors spin up, then print executor endpoints one-per-line
+  # Example output lines: "172.19.0.3:41923" or "worker2:38267"
+  docker compose -f cs511p1-compose.yaml exec main bash -lc '
+    /opt/spark/bin/spark-shell --master spark://main:7077 -e "
+      sc.parallelize(1 to 1000,3).count
+      sc.getExecutorMemoryStatus.keys.foreach(println)
+    " 2>/dev/null
+  ' \
+  | awk -F: "{print \$1}" \
+  | while read -r H; do
+      # Map IPs -> container hostnames via Docker DNS; if already a name, this preserves it.
+      getent hosts "\$H" | awk "{print \\\$2}" 2>/dev/null || echo "\$H"
+    done \
+  | sort -u \
+  | tee out/test_spark_q1.out >/dev/null
+}
 
 function test_spark_q2() {
     docker compose -f cs511p1-compose.yaml cp resources/pi.scala main:/pi.scala
