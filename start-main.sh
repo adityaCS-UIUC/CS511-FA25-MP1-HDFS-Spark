@@ -32,6 +32,15 @@ echo "Starting HDFS cluster (NameNode on main, DataNodes on workers)..."
 # Start NameNode on main and DataNodes on worker1 and worker2 via SSH
 $HADOOP_HOME/sbin/start-dfs.sh
 
+export SPARK_LOCAL_HOSTNAME=main
+export SPARK_LOCAL_IP=$(getent hosts main | awk '{print $1}')
+
+# Start Spark master on the hostname "main"
+ /opt/spark/sbin/start-master.sh --host main -p 7077 --webui-port 8080
+
+# Start a worker on "main" as well (so you have 3 executors total)
+ /opt/spark/sbin/start-worker.sh --host main spark://main:7077 --webui-port 8081
+
 echo "Starting Spark cluster (Master on main, Workers on workers)..."
 # Start Spark Master on main and Workers on worker1 and worker2
 $SPARK_HOME/sbin/start-master.sh

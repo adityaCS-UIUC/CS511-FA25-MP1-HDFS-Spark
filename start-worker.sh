@@ -13,6 +13,11 @@ ssh-add ~/.ssh/shared_rsa
 # Start HDFS/Spark worker here
 export JAVA_HOME="/usr/local/openjdk-8/jre"
 
+export SPARK_LOCAL_HOSTNAME=$(hostname)
+export SPARK_LOCAL_IP=$(getent hosts $(hostname) | awk '{print $1}')
+
+/opt/spark/sbin/start-worker.sh --host "$(hostname)" spark://main:7077
+
 export HDFS_DATANODE_USER="root"
 # bash
 echo "Starting DataNode..."
