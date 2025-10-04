@@ -1,7 +1,7 @@
-time="2025-10-03T20:26:28-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-03T20:45:51-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
  cs511-fall2025-p1-main-1 copy resources/pi.scala to cs511-fall2025-p1-main-1:/pi.scala Copying
  cs511-fall2025-p1-main-1 copy resources/pi.scala to cs511-fall2025-p1-main-1:/pi.scala Copied
-time="2025-10-03T20:26:28-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-03T20:45:51-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 + export SPARK_HOME=/opt/spark
 + SPARK_HOME=/opt/spark
 + export PATH=/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
@@ -10,9 +10,9 @@ time="2025-10-03T20:26:28-05:00" level=warning msg="/Users/adityaprasathravilla/
 + spark-shell --master spark://main:7077
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
-25/10/04 01:26:31 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+25/10/04 01:45:53 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Spark context Web UI available at http://main:4040
-Spark context available as 'sc' (master = spark://main:7077, app id = app-20251004012631-0015).
+Spark context available as 'sc' (master = spark://main:7077, app id = app-20251004014554-0028).
 Spark session available as 'spark'.
 Welcome to
       ____              __
@@ -32,9 +32,9 @@ scala> val count = sc.parallelize(1 to 10000000).filter { _ =>
      |   val y = math.random
      |   x*x + y*y < 1
      | }.count()
-[Stage 0:>                                                        (0 + 42) / 42][Stage 0:====>                                                    (3 + 39) / 42][Stage 0:=============>                                          (10 + 32) / 42][Stage 0:==========================================>             (32 + 10) / 42][Stage 0:======================================================>  (40 + 2) / 42]                                                                                count: Long = 7856402
+[Stage 0:>                                                        (0 + 42) / 42][Stage 0:==>                                                      (2 + 40) / 42][Stage 0:=========>                                               (7 + 35) / 42][Stage 0:=========================>                              (19 + 23) / 42][Stage 0:======================================>                 (29 + 13) / 42][Stage 0:============================================>            (33 + 9) / 42]                                                                                count: Long = 7856332
 
 scala> println(s"Pi is roughly ${4.0 * count / 10000000}")
-Pi is roughly 3.1425608
+Pi is roughly 3.1425328
 
 scala> :quit

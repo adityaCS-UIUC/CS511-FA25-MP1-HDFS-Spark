@@ -1,9 +1,9 @@
-time="2025-10-03T20:26:08-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
-2025-10-04 01:26:08,578 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+time="2025-10-03T20:45:30-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+2025-10-04 01:45:30,702 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Configured Capacity: 1456421953536 (1.32 TB)
-Present Capacity: 1342740488636 (1.22 TB)
-DFS Remaining: 1341934067712 (1.22 TB)
-DFS Used: 806420924 (769.06 MB)
+Present Capacity: 1342396055552 (1.22 TB)
+DFS Remaining: 1341589561344 (1.22 TB)
+DFS Used: 806494208 (769.13 MB)
 DFS Used%: 0.06%
 Replicated Blocks:
 	Under replicated blocks: 0
@@ -26,19 +26,19 @@ Name: 172.18.0.2:9866 (cs511-fall2025-p1-worker2-1.cs511-fall2025-p1_default)
 Hostname: worker2
 Decommission Status : Normal
 Configured Capacity: 485473984512 (452.13 GB)
-DFS Used: 100798464 (96.13 MB)
-Non DFS Used: 13325873152 (12.41 GB)
-DFS Remaining: 447311355904 (416.59 GB)
+DFS Used: 100839424 (96.17 MB)
+Non DFS Used: 13440667648 (12.52 GB)
+DFS Remaining: 447196520448 (416.48 GB)
 DFS Used%: 0.02%
-DFS Remaining%: 92.14%
+DFS Remaining%: 92.12%
 Configured Cache Capacity: 0 (0 B)
 Cache Used: 0 (0 B)
 Cache Remaining: 0 (0 B)
 Cache Used%: 100.00%
 Cache Remaining%: 0.00%
 Xceivers: 0
-Last contact: Sat Oct 04 01:26:06 UTC 2025
-Last Block Report: Sat Oct 04 01:06:56 UTC 2025
+Last contact: Sat Oct 04 01:45:28 UTC 2025
+Last Block Report: Sat Oct 04 01:31:00 UTC 2025
 Num of Blocks: 3
 
 
@@ -46,18 +46,18 @@ Name: 172.18.0.3:9866 (cs511-fall2025-p1-worker1-1.cs511-fall2025-p1_default)
 Hostname: worker1
 Decommission Status : Normal
 Configured Capacity: 485473984512 (452.13 GB)
-DFS Used: 302426132 (288.42 MB)
-Non DFS Used: 13124245484 (12.22 GB)
-DFS Remaining: 447311355904 (416.59 GB)
+DFS Used: 302419968 (288.41 MB)
+Non DFS Used: 13239087104 (12.33 GB)
+DFS Remaining: 447196520448 (416.48 GB)
 DFS Used%: 0.06%
-DFS Remaining%: 92.14%
+DFS Remaining%: 92.12%
 Configured Cache Capacity: 0 (0 B)
 Cache Used: 0 (0 B)
 Cache Remaining: 0 (0 B)
 Cache Used%: 100.00%
 Cache Remaining%: 0.00%
 Xceivers: 0
-Last contact: Sat Oct 04 01:26:06 UTC 2025
+Last contact: Sat Oct 04 01:45:28 UTC 2025
 Last Block Report: Sat Oct 04 01:06:56 UTC 2025
 Num of Blocks: 5
 
@@ -66,18 +66,18 @@ Name: 172.18.0.4:9866 (main)
 Hostname: main
 Decommission Status : Normal
 Configured Capacity: 485473984512 (452.13 GB)
-DFS Used: 403196328 (384.52 MB)
-Non DFS Used: 13023475288 (12.13 GB)
-DFS Remaining: 447311355904 (416.59 GB)
+DFS Used: 403234816 (384.55 MB)
+Non DFS Used: 13138272256 (12.24 GB)
+DFS Remaining: 447196520448 (416.48 GB)
 DFS Used%: 0.08%
-DFS Remaining%: 92.14%
+DFS Remaining%: 92.12%
 Configured Cache Capacity: 0 (0 B)
 Cache Used: 0 (0 B)
 Cache Remaining: 0 (0 B)
 Cache Used%: 100.00%
 Cache Remaining%: 0.00%
 Xceivers: 0
-Last contact: Sat Oct 04 01:26:06 UTC 2025
+Last contact: Sat Oct 04 01:45:28 UTC 2025
 Last Block Report: Sat Oct 04 01:10:08 UTC 2025
 Num of Blocks: 8
 

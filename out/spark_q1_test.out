@@ -1,0 +1,36 @@
+time="2025-10-03T20:45:16-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+Setting default log level to "WARN".
+To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
+25/10/04 01:45:18 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Spark context Web UI available at http://main:4040
+Spark context available as 'sc' (master = spark://main:7077, app id = app-20251004014519-0026).
+Spark session available as 'spark'.
+Welcome to
+      ____              __
+     / __/__  ___ _____/ /__
+    _\ \/ _ \/ _ `/ __/  '_/
+   /___/ .__/\_,_/_/ /_/\_\   version 3.3.0
+      /_/
+         
+Using Scala version 2.12.15 (OpenJDK 64-Bit Server VM, Java 1.8.0_342)
+Type in expressions to have them evaluated.
+Type :help for more information.
+
+scala> import org.apache.spark.SparkContext
+import org.apache.spark.SparkContext
+
+scala> 
+
+scala> def currentActiveExecutors(sc: SparkContext): Seq[String] = {
+     |  val allExecutors = sc.getExecutorMemoryStatus.map(_._1)
+     |  val driverHost: String = sc.getConf.get("spark.driver.host")
+     |  allExecutors.filter(! _.split(":")(0).equals(driverHost)).toList
+     | }
+currentActiveExecutors: (sc: org.apache.spark.SparkContext)Seq[String]
+
+scala> 
+
+scala> currentActiveExecutors(sc)
+res0: Seq[String] = List(172.18.0.2:35279, 172.18.0.4:46509, 172.18.0.3:34869)
+
+scala> :quit

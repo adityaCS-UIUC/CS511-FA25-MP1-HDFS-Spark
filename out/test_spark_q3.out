@@ -1,19 +1,19 @@
-time="2025-10-03T20:26:35-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-03T20:45:57-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
  cs511-fall2025-p1-main-1 copy resources/fox.txt to cs511-fall2025-p1-main-1:/test_fox.txt Copying
  cs511-fall2025-p1-main-1 copy resources/fox.txt to cs511-fall2025-p1-main-1:/test_fox.txt Copied
-time="2025-10-03T20:26:35-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-03T20:45:57-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 + export SPARK_HOME=/opt/spark
 + SPARK_HOME=/opt/spark
 + export PATH=/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
 + PATH=/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
 + hdfs dfs -mkdir -p /test
-2025-10-04 01:26:35,477 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2025-10-04 01:45:58,181 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 + hdfs dfs -put -f /test_fox.txt /test/fox.txt
-2025-10-04 01:26:35,968 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2025-10-04 01:45:58,658 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 + hdfs dfs -cat /test/fox.txt
-2025-10-04 01:26:36,544 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+2025-10-04 01:45:59,227 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 The quick brown fox jumps over the lazy dog
-time="2025-10-03T20:26:36-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+time="2025-10-03T20:45:59-05:00" level=warning msg="/Users/adityaprasathravilla/Desktop/cs511-fall2025-p1/cs511p1-compose.yaml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
 + export SPARK_HOME=/opt/spark
 + SPARK_HOME=/opt/spark
 + export PATH=/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
@@ -22,9 +22,9 @@ time="2025-10-03T20:26:36-05:00" level=warning msg="/Users/adityaprasathravilla/
 + spark-shell --master spark://main:7077
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
-25/10/04 01:26:39 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+25/10/04 01:46:02 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Spark context Web UI available at http://main:4040
-Spark context available as 'sc' (master = spark://main:7077, app id = app-20251004012639-0016).
+Spark context available as 'sc' (master = spark://main:7077, app id = app-20251004014602-0029).
 Spark session available as 'spark'.
 Welcome to
       ____              __
