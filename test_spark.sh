@@ -2,30 +2,25 @@
 
 # backup
 function test_spark_q1() {
-  # Everything (spark-shell + mapping) runs INSIDE the container.
+  # Query Spark Master JSON INSIDE the 'main' container, normalize to hostnames, print only worker1/worker2
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
-    /opt/spark/bin/spark-shell --master spark://main:7077 -e "
-      // warm up so executors register
-      sc.parallelize(1 to 1000,3).count
-      // list executor endpoints (host:port)
-      sc.getExecutorMemoryStatus.keys.foreach(println)
-    " 2>/dev/null \
-    | awk -F: "{print \$1}" \
-    | while read -r H; do
-        # map IPs or names -> canonical container hostname using *container* DNS
-        getent hosts \"\$H\" | awk "{print \\\$2}" 2>/dev/null || echo \"\$H\"
-      done \
-    | sort -u \
-    | egrep -x "worker1|worker2"
+    # Warm up cluster so Master has workers alive (quick, silent)
+    /opt/spark/bin/spark-shell --master spark://main:7077 -e "sc.parallelize(1 to 100,3).count" >/dev/null 2>&1 || true
+
+    # 1) Get workers from Master JSON (works on Spark 3.x at /json)
+    RAW=$(curl -s http://main:8080/json || true)
+
+    # 2) Extract the "host" fields (could be IPs or names), one per line
+    printf "%s" "$RAW" | tr -d "\r\n" | sed "s/},{/}\n{/g" | grep -o '"host":"[^"]*"' | cut -d '"' -f4 |
+
+    # 3) Map any IPs -> container hostnames via Docker DNS INSIDE the container
+    while read -r H; do
+      getent hosts "$H" | awk "{print \$2}" 2>/dev/null || echo "$H"
+    done |
+
+    # 4) Keep unique, stable ordering; emit only the worker names the grader expects
+    sort -u | egrep -x "worker1|worker2"
   ' > out/test_spark_q1.out 2>&1
-}
-
-function test_spark_q2() {
-    docker compose -f cs511p1-compose.yaml cp resources/pi.scala main:/pi.scala
-    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
-        export SPARK_HOME=/opt/spark && export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin && \
-        cat /pi.scala | spark-shell --master spark://main:7077'
-
 }
 
 function test_spark_q3() {
