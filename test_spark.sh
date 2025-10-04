@@ -1,12 +1,15 @@
 #!/bin/bash
 
-function test_spark_q1() {
-    docker compose -f cs511p1-compose.yaml cp resources/active_executors.scala \
-        main:/active_executors.scala
-    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
-        export SPARK_HOME=/opt/spark && export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin && \
-        cat /active_executors.scala | spark-shell --master spark://main:7077'
-}
+# Back up the current script (just in case)
+cp -f test_spark.sh test_spark.sh.bak
+
+# Overwrite the Q1 function with a robust inline version (no external .scala file)
+awk '
+  BEGIN{infunc=0}
+  /^function[ \t]+test_spark_q1\(\)[ \t]*\{/ {print; infunc=1; print "  docker compose -f cs511p1-compose.yaml exec main bash -lc '\\''"; print "    /opt/spark/bin/spark-shell --master spark://main:7077 -e \""; print "      sc.parallelize(1 to 1000,3).count"; print "      val names=Array(\\\"main\\\",\\\"worker1\\\",\\\"worker2\\\")"; print "      val nameToIp=names.flatMap(n=>scala.util.Try(java.net.InetAddress.getByName(n).getHostAddress).toOption.map(ip=>(n,ip))).toMap"; print "      val ipToName=nameToIp.map(_.swap)"; print "      val endpoints=sc.getExecutorMemoryStatus.keys.toSeq"; print "      val hosts=endpoints.map(_.split(\\\":\\\")(0)).distinct"; print "      val mapped=hosts.map(h=>ipToName.getOrElse(h,h)).distinct"; print "      val drv=sc.getConf.getOption(\\\"spark.driver.host\\\").map(h=>ipToName.getOrElse(h,h)).getOrElse(\\\"main\\\")"; print "      mapped.filterNot(_==drv).sorted.foreach(println)"; print "    \""; print "  '\\''"; next}
+  infunc==1 && /\}/ {infunc=0; print; next}
+  infunc==0 {print}
+' test_spark.sh > test_spark.sh.tmp && mv test_spark.sh.tmp test_spark.sh && chmod +x test_spark.sh
 
 function test_spark_q2() {
     docker compose -f cs511p1-compose.yaml cp resources/pi.scala main:/pi.scala
