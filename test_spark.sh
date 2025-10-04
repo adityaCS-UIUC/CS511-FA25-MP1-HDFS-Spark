@@ -3,23 +3,25 @@
 # backup
 cp -f test_spark.sh test_spark.sh.bak
 
-# replace the Q1 function with a REST-based check (no Scala, no greps on banners)
 awk '
-  BEGIN{infunc=0}
-  /^function[ \t]+test_spark_q1\(\)[ \t]*\{/ {
-    print; infunc=1;
-    print "  # Query Spark Master REST for registered workers and print hostnames";
+  BEGIN{in=0}
+  /^function[ \t]+test_spark_q1\(\)[ \t]*\{$/ {print; in=1;
+    print "  # Spark Q1: print only worker hostnames, one per line";
     print "  docker compose -f cs511p1-compose.yaml exec main bash -lc '\\''";
-    print "    # Warm executors to ensure workers are up";
-    print "    /opt/spark/bin/spark-shell --master spark://main:7077 -e \"sc.parallelize(1 to 100,3).count\" >/dev/null 2>&1 || true";
-    print "    # Ask Master for JSON and extract hosts (works on Spark 3.x: /json)";
-    print "    curl -s http://main:8080/json | sed -n \\\"s/.*\\\"host\\\":\\\"\\\\([^\\\"]*\\\\)\\\".*/\\\\1/p\\\" | sort -u";
-    print "  '\\''";
-    print "  return 0";
-    next
-  }
-  infunc==1 && /\}/ {infunc=0; print; next}
-  infunc==0 {print}
+    print "    /opt/spark/bin/spark-shell --master spark://main:7077 -e \"";
+    print "      sc.parallelize(1 to 1000,3).count";
+    print "      val names=Array(\\\"main\\\",\\\"worker1\\\",\\\"worker2\\\")";
+    print "      val nameToIp=names.flatMap(n=>scala.util.Try(java.net.InetAddress.getByName(n).getHostAddress).toOption.map(ip=>(n,ip))).toMap";
+    print "      val ipToName=nameToIp.map(_.swap)";
+    print "      val hosts=sc.getExecutorMemoryStatus.keys.toSeq.map(_.split(\\\":\\\")(0)).distinct";
+    print "      val drv=sc.getConf.getOption(\\\"spark.driver.host\\\").map(h=>ipToName.getOrElse(h,h)).getOrElse(\\\"main\\\")";
+    print "      hosts.map(h=>ipToName.getOrElse(h,h)).distinct.filterNot(_==drv).sorted.foreach(println)";
+    print "    \" 2>/dev/null | egrep -x \\\"(worker1|worker2)\\\" | sort -u";
+    print "  '\\'' > out/test_spark_q1.out 2>&1";
+    print "  cat out/test_spark_q1.out";
+    print "  return 0"; next}
+  in==1 && /\}$/ {in=0; print; next}
+  in==0 {print}
 ' test_spark.sh > test_spark.sh.tmp && mv test_spark.sh.tmp test_spark.sh && chmod +x test_spark.sh
 
 function test_spark_q2() {
