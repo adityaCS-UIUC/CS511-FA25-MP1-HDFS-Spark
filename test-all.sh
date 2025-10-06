@@ -82,100 +82,74 @@ function test_spark_q4() {
         hdfs://main:9000/spark/tera-out hdfs://main:9000/spark/tera-val'
 }
 
-# --- REAL Part 3: HDFS/Spark Sorting -----------------------------------------
+# --- REAL Part 3: HDFS/Spark Sorting ---
 function test_terasorting() {
-  # 1) Create the example CSV locally (exact lines from the prompt)
-  cat > /tmp/caps.csv <<'CSV'
-1999,1234-5678-91011
-1800,1001-1002-10003
-2023,0829-0914-00120
-2050,9999-9999-99999
-CSV
-
-  # 2) Upload to HDFS and run Spark to produce sorted output to stdout
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -e
-    hdfs dfs -rm -f /data/caps.csv >/dev/null 2>&1 || true
-    hdfs dfs -mkdir -p /data >/dev/null 2>&1 || true
-    hdfs dfs -put -f /tmp/caps.csv /data/caps.csv
 
-    # Run the sorting job; filter out Spark banner so we only print result lines
+    # Make hdfs resolvable
+    export HADOOP_HOME=/opt/hadoop
+    export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
+
+    # Ensure data exists in HDFS (idempotent)
+    hdfs dfs -mkdir -p /data >/dev/null 2>&1 || true
+    hdfs dfs -test -e /data/caps.csv || hdfs dfs -put -f /tmp/caps.csv /data/caps.csv
+
+    # Run Spark and print only result lines
     /opt/spark/bin/spark-shell --master spark://main:7077 -e "
-      val rdd  = sc.textFile(\"hdfs://main:9000/data/caps.csv\")
-      val rows = rdd.map(_.trim).filter(_.nonEmpty)
-                     .map{s => val p=s.split(\",\"); (p(0).toInt, p(1)) }
-                     .filter{ case (year, _) => year <= 2025 }
-                     // newest→oldest (desc year) then lowest→highest serial
-                     .sortBy({ case (y, sn) => (-y, sn) }, ascending = true)
-                     .map{ case (y, sn) => s\"$y,$sn\" }
-      rows.collect().foreach(println)
+      val rdd = sc.textFile(\"hdfs://main:9000/data/caps.csv\")
+      val out = rdd.map(_.trim).filter(_.nonEmpty)
+                   .map{s => val p=s.split(\",\"); (p(0).toInt, p(1)) }
+                   .filter{case (y,_) => y <= 2025}
+                   .sortBy({case (y,sn) => (-y, sn)}, ascending = true)
+                   .map{case (y,sn)=> s\"$y,$sn\"}
+      out.collect().foreach(println)
     " 2>/dev/null | egrep -x "^[0-9]{4},[0-9-]+$"
   '
 }
 
-# --- REAL Part 4: HDFS/Spark PageRank (Extra Credit) --------------------------
+# --- REAL Part 4: HDFS/Spark PageRank (EC) ---
 function test_pagerank() {
-  # 1) Create the example edges CSV locally (exact lines from the prompt)
-  cat > /tmp/edges.csv <<'CSV'
-2,3
-3,2
-4,2
-5,2
-5,6
-6,5
-7,5
-8,5
-9,5
-10,5
-11,5
-4,1
-CSV
-
-  # 2) Upload to HDFS and run Spark PageRank; print ranks (3 decimals)
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -e
-    hdfs dfs -rm -f /graph/edges.csv >/dev/null 2>&1 || true
+
+    # Make hdfs resolvable
+    export HADOOP_HOME=/opt/hadoop
+    export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
+
+    # Ensure data exists in HDFS (idempotent)
     hdfs dfs -mkdir -p /graph >/dev/null 2>&1 || true
-    hdfs dfs -put -f /tmp/edges.csv /graph/edges.csv
+    hdfs dfs -test -e /graph/edges.csv || hdfs dfs -put -f /tmp/edges.csv /graph/edges.csv
 
+    # Run PageRank and print ranks only
     /opt/spark/bin/spark-shell --master spark://main:7077 -e "
-      val d   = 0.85
-      val eps = 1e-4
-
+      val d=0.85; val eps=1e-4
       val edges = sc.textFile(\"hdfs://main:9000/graph/edges.csv\")
-                     .map(_.trim).filter(_.nonEmpty)
-                     .map{ line => val p=line.split(\",\"); (p(0).toInt, p(1).toInt) }
-
-      val nodes = edges.flatMap{ case (s,t) => Seq(s,t) }.distinct().cache()
-      val N     = nodes.count().toDouble
-
+                    .map(_.trim).filter(_.nonEmpty)
+                    .map{ l => val p=l.split(\",\"); (p(0).toInt, p(1).toInt) }
+      val nodes = edges.flatMap{case (s,t)=>Seq(s,t)}.distinct().cache()
+      val N = nodes.count().toDouble
       val links = edges.groupByKey().mapValues(_.toSet).cache()
-      var ranks = nodes.map(n => (n, 1.0 / N)).cache()
-
-      def iterate(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
-        val contribs = links.leftOuterJoin(r).flatMap{ case (n,(outs,rankOpt)) =>
-          val rank = rankOpt.getOrElse(0.0)
-          if (outs.isEmpty) Seq() else outs.toSeq.map(dst => (dst, rank / outs.size))
+      var ranks = nodes.map(n => (n, 1.0/N)).cache()
+      def step(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
+        val contribs = links.leftOuterJoin(r).flatMap{ case (_, (outs, ropt)) =>
+          val rank = ropt.getOrElse(0.0)
+          if (outs.isEmpty) Seq() else outs.toSeq.map(dst => (dst, rank/outs.size))
         }
-        val newRanks = contribs.reduceByKey(_ + _).rightOuterJoin(nodes.map((_,())))
-                           .map{ case (n,(sumOpt,_)) => (n, (1-d)/N + d*sumOpt.getOrElse(0.0)) }
-        newRanks
+        contribs.reduceByKey(_+_).rightOuterJoin(nodes.map((_,())))
+                .map{ case (n,(s,_)) => (n, (1-d)/N + d*s.getOrElse(0.0)) }
       }
-
-      var delta = Double.MaxValue; var i = 0
-      while (delta > eps && i < 50) {
-        val newRanks = iterate(ranks).cache()
-        delta = ranks.join(newRanks).map{ case (_, (a,b)) => math.abs(a-b) }.max()
-        ranks.unpersist(false); ranks = newRanks; i += 1
+      var delta=1.0; var i=0
+      while (delta>eps && i<50) {
+        val nr=step(ranks).cache()
+        delta=ranks.join(nr).map{case(_, (a,b))=>math.abs(a-b)}.max()
+        ranks.unpersist(false); ranks=nr; i+=1
       }
-
-      val fmt = new java.text.DecimalFormat(\"0.000\")
-      val out = ranks.collect().toSeq.sortBy{ case (n,r) => (-r, n) }
-      out.foreach{ case (n,r) => println(s\"$n,${fmt.format(r)}\") }
+      val fmt=new java.text.DecimalFormat(\"0.000\")
+      ranks.collect().toSeq.sortBy{case(n,r)=>(-r,n)}.foreach{case(n,r)=> println(s\"$n,${fmt.format(r)}\")}
     " 2>/dev/null | egrep -x "^[0-9]+,[0-9]+\.[0-9]{3}$"
   '
 }
-
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
