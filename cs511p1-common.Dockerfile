@@ -19,7 +19,7 @@ RUN ssh-keygen -t rsa -P '' -f ~/.ssh/shared_rsa -C common && \
 
 # Set Hadoop and Spark versions
 ENV HADOOP_VERSION 3.3.6
-ENV SPARK_VERSION 3.3.0
+ENV SPARK_VERSION 3.4.1
 ENV HADOOP_HOME /opt/hadoop
 ENV SPARK_HOME /opt/spark
 
