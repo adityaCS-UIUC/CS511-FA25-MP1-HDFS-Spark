@@ -95,9 +95,9 @@ CSV
   # 2) Upload to HDFS and run Spark to produce sorted output to stdout
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -e
-    hdfs dfs -rm -f /data/caps.csv >/dev/null 2>&1 || true
+    hdfs dfs -rm -f CS511-FA25-MP1-HDFS-Spark/tmp/caps.csv >/dev/null 2>&1 || true
     hdfs dfs -mkdir -p /data >/dev/null 2>&1 || true
-    hdfs dfs -put -f /tmp/caps.csv /data/caps.csv
+    hdfs dfs -put -f CS511-FA25-MP1-HDFS-Spark/tmp/caps.csv /data/caps.csv
 
     # Run the sorting job; filter out Spark banner so we only print result lines
     /opt/spark/bin/spark-shell --master spark://main:7077 -e "
@@ -134,9 +134,9 @@ CSV
   # 2) Upload to HDFS and run Spark PageRank; print ranks (3 decimals)
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -e
-    hdfs dfs -rm -f /graph/edges.csv >/dev/null 2>&1 || true
+    hdfs dfs -rm -f CS511-FA25-MP1-HDFS-Spark/tmp/edges.csv >/dev/null 2>&1 || true
     hdfs dfs -mkdir -p /graph >/dev/null 2>&1 || true
-    hdfs dfs -put -f /tmp/edges.csv /graph/edges.csv
+    hdfs dfs -put -f CS511-FA25-MP1-HDFS-Spark/tmp/edges.csv /graph/edges.csv
 
     /opt/spark/bin/spark-shell --master spark://main:7077 -e "
       val d   = 0.85
