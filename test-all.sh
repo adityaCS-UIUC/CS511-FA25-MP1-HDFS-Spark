@@ -34,34 +34,11 @@ docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
 
 # test_spark.sh
 function test_spark_q1() {
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '
-    set -euo pipefail
-    cat > /active_executors.scala <<'\''SCALA'\''
-import java.net.InetAddress
-sc.parallelize(1 to 1000, 3).count()
-
-val names = Array("main","worker1","worker2")
-val nameToIp = names.flatMap(n => scala.util.Try(InetAddress.getByName(n).getHostAddress).toOption.map(ip => (n, ip))).toMap
-val ipToName = nameToIp.map(_.swap)
-
-val endpoints = sc.getExecutorMemoryStatus.keys.toSeq          // "host:port"
-val hosts = endpoints.map(_.split(":")(0)).distinct             // host or IP
-val mapped = hosts.map(h => ipToName.getOrElse(h, h)).distinct
-val drv = sc.getConf.getOption("spark.driver.host")
-  .map(h => ipToName.getOrElse(h, h)).getOrElse("main")
-mapped.filterNot(_ == drv).sorted.filter(Set("worker1","worker2")).foreach(println)
-SCALA
-
-    # Run spark-shell in include-file mode (-i), filter out banner noise, keep just exact worker lines
-    /opt/spark/bin/spark-shell --master spark://main:7077 -i /active_executors.scala -e "" 2>/dev/null \
-      | egrep -x "worker1|worker2" \
-      | sort -u \
-      > /tmp/q1.out
-
-    # show what we captured for debugging
-    cat /tmp/q1.out
-  ' > out/test_spark_q1.out 2>&1
-  cat out/test_spark_q1.out
+    docker compose -f cs511p1-compose.yaml cp resources/active_executors.scala \
+        main:/active_executors.scala
+    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+        export SPARK_HOME=/opt/spark && export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin && \
+        cat /active_executors.scala | spark-shell --master spark://main:7077'
 }
 
 function test_spark_q2() {
