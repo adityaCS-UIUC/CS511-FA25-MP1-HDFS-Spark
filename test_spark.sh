@@ -2,53 +2,10 @@
 
 # backup
 function test_spark_q1() {
-  # Run entirely INSIDE the container so Docker DNS works.
-  docker compose -f cs511p1-compose.yaml exec main bash -lc '
-    set -euo pipefail
-
-    # 1) Warm executors so they register with the master
-    /opt/spark/bin/spark-shell --master spark://main:7077 -e "sc.parallelize(1 to 1000,3).count" >/dev/null 2>&1 || true
-
-    # 2) Get executor endpoints (host:port), strip ports -> host tokens
-    HOSTS=$(/opt/spark/bin/spark-shell --master spark://main:7077 -e "sc.getExecutorMemoryStatus.keys.foreach(println)" 2>/dev/null \
-            | awk -F: "NF{print \$1}" | sort -u)
-
-    # 3) Build name<->IP maps for main/worker1/worker2 from container DNS
-    declare -A NAME2IP IP2NAME
-    for n in main worker1 worker2; do
-      ip=$(getent hosts "$n" | awk "{print \$1}" || true)
-      [ -n "$ip" ] && NAME2IP[$n]="$ip" && IP2NAME[$ip]="$n"
-    done
-
-    # 4) Driver host (normalize to name if it was an IP)
-    RAWDRV=$(/opt/spark/bin/spark-shell --master spark://main:7077 -e "println(sc.getConf.get(\"spark.driver.host\"))" 2>/dev/null | tail -n1 || true)
-    DRV=${IP2NAME[$RAWDRV]:-$RAWDRV}
-
-    # 5) Map each host token (IP or name) -> canonical name, drop driver, keep only worker1/worker2
-    OUT=""
-    while read -r H; do
-      [ -z "$H" ] && continue
-      if [[ -n "${IP2NAME[$H]:-}" ]]; then
-        N="${IP2NAME[$H]}"
-      else
-        # If H is already a hostname, keep it; if it resolves to a known IP, map that back to the name
-        ip=$(getent hosts "$H" | awk "{print \$1}" || true)
-        if [[ -n "$ip" && -n "${IP2NAME[$ip]:-}" ]]; then
-          N="${IP2NAME[$ip]}"
-        else
-          N="$H"
-        fi
-      fi
-      [[ "$N" == "$DRV" ]] && continue
-      [[ "$N" == "worker1" || "$N" == "worker2" ]] && OUT+="$N"$'\n'
-    done <<< "$HOSTS"
-
-    # 6) Emit exactly the two lines (sorted unique)
-    echo "$OUT" | grep -E "worker[12]" | sort -u
-  ' > out/test_spark_q1.out 2>&1
-
-  # Show what got captured (useful for debugging if needed)
-  cat out/test_spark_q1.out
+    docker compose -f cs511p1-compose.yaml cp resources/active_executors.scala \
+        main:/active_executors.scala
+    docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
+        cat /active_executors.scala | spark-shell --master spark://main:7077'
 }
 
 function test_spark_q2() {
