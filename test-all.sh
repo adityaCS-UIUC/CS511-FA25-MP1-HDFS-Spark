@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # test_hdfs.sh
 function test_hdfs_q1() {
     docker compose -f cs511p1-compose.yaml exec main hdfs dfsadmin -report >&2
@@ -81,17 +82,6 @@ function test_spark_q4() {
         hdfs://main:9000/spark/tera-out hdfs://main:9000/spark/tera-val'
 }
 
-function inject_if_missing() {
-  local LOCAL="$1"; local REMOTE="$2"
-  # Fail loud if the local file isn't in the repo
-  if [[ ! -s "$LOCAL" ]]; then
-    echo "❌ Missing required file: $LOCAL" >&2
-    exit 1
-  fi
-  # If the file isn't present in container, stream it in via STDIN
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "test -s '$REMOTE' || cat > '$REMOTE'" < "$LOCAL"
-}
-
 # --- Part 3: HDFS/Spark Sorting (robust, non-hanging) -------------------------
 function test_terasorting() {
     docker compose -f cs511p1-compose.yaml cp tmp/caps.csv  main:/tmp/caps.csv
@@ -136,78 +126,49 @@ function test_pagerank() {
     export HADOOP_HOME=/opt/hadoop
     export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
 
-    # Ensure input present (idempotent)
     hdfs dfs -mkdir -p /graph >/dev/null 2>&1 || true
     hdfs dfs -test -e /graph/edges.csv || hdfs dfs -put -f /tmp/edges.csv /graph/edges.csv
 
-    # Literal heredoc so bash doesn’t expand ${...}
+    # Literal heredoc (no interpolation -> avoids "bad substitution")
     cat > /tmp/pagerank.scala <<'\''SCALA'\''
-val d   = 0.85
+val d = 0.85
 val eps = 1e-4
 
-// Load edges
 val edges = sc.textFile("hdfs://main:9000/graph/edges.csv")
               .map(_.trim).filter(_.nonEmpty)
               .map{ line => val p = line.split(","); (p(0).toInt, p(1).toInt) }
 
-// All nodes present in the graph
 val nodes = edges.flatMap{ case (s,t) => Seq(s,t) }.distinct().cache()
-val N     = nodes.count().toDouble
-
-// Outgoing link sets for every node (include empty sets for dangling nodes)
-val linksRaw = edges.groupByKey().mapValues(_.toSet)
-val links = nodes.map(n => (n, Set.empty[Int]))
-                 .leftOuterJoin(linksRaw)
-                 .mapValues{ case (_, outsOpt) => outsOpt.getOrElse(Set.empty[Int]) }
-                 .cache()
-
-// Initialize ranks uniformly
+val N = nodes.count().toDouble
+val links = edges.groupByKey().mapValues(_.toSet).cache()
 var ranks = nodes.map(n => (n, 1.0 / N)).cache()
 
-def iterate(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
-  // 1) Compute dangling mass (nodes with no outlinks)
-  val danglingMass = r.join(links)
-                      .filter{ case (_, (rank, outs)) => outs.isEmpty }
-                      .map{ case (_, (rank, _)) => rank }
-                      .sum()
-
-  // 2) Distribute contributions from non-dangling nodes
-  val contribs = r.join(links).flatMap{
-    case (_, (rank, outs)) =>
-      if (outs.isEmpty) Iterator.empty
-      else outs.iterator.map(dst => (dst, rank / outs.size))
+def step(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
+  val contribs = links.leftOuterJoin(r).flatMap{ case (_, (outs, ropt)) =>
+    val rank = ropt.getOrElse(0.0)
+    if (outs.isEmpty) Seq() else outs.toSeq.map(dst => (dst, rank / outs.size))
   }
-
-  // 3) Base term = teleport + redistributed dangling mass (uniform to all nodes)
-  val base = (1 - d) / N + d * (danglingMass / N)
-
-  // 4) New ranks = base + d * incoming contributions
-  val newRanks = contribs.reduceByKey(_ + _)
-                         .rightOuterJoin(nodes.map((_, ())))
-                         .map{ case (n, (sumOpt, _)) => (n, base + d * sumOpt.getOrElse(0.0)) }
-  newRanks
+  contribs.reduceByKey(_ + _).rightOuterJoin(nodes.map((_, ())))
+          .map{ case (n, (s, _)) => (n, (1 - d)/N + d * s.getOrElse(0.0)) }
 }
 
-// Iterate to convergence (cap at 50 iters)
-var delta = Double.MaxValue
+var delta = 1.0
 var i = 0
 while (delta > eps && i < 50) {
-  val next = iterate(ranks).cache()
-  delta = ranks.join(next).map{ case (_, (a, b)) => math.abs(a - b) }.max()
-  ranks.unpersist(false); ranks = next; i += 1
+  val nr = step(ranks).cache()
+  delta = ranks.join(nr).map{ case (_, (a, b)) => math.abs(a - b) }.max()
+  ranks.unpersist(false)
+  ranks = nr
+  i += 1
 }
 
-// Format and print (rank desc, then node asc), 3 decimals
 val fmt = new java.text.DecimalFormat("0.000")
-ranks.collect().toSeq
-     .sortBy{ case (n, r) => (-r, n) }
+ranks.collect().toSeq.sortBy{ case (n, r) => (-r, n) }
      .foreach{ case (n, r) => println(s"$n,${fmt.format(r)}") }
 
-// Hard-exit so the shell doesn’t hang
 System.exit(0)
 SCALA
 
-    # Run with a timeout; keep only "n,rank" lines
     timeout 180 /opt/spark/bin/spark-shell \
       --master spark://main:7077 \
       --conf spark.ui.enabled=false \
