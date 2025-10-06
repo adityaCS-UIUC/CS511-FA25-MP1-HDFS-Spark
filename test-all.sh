@@ -94,6 +94,7 @@ function inject_if_missing() {
 
 # --- Part 3: HDFS/Spark Sorting (robust, non-hanging) -------------------------
 function test_terasorting() {
+    docker compose -f cs511p1-compose.yaml cp tmp/caps.csv  main:/tmp/caps.csv
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -euo pipefail
     export HADOOP_HOME=/opt/hadoop
@@ -129,6 +130,7 @@ SCALA
 
 # --- Part 4: HDFS/Spark PageRank (robust, non-hanging) ------------------------
 function test_pagerank() {
+    docker compose -f cs511p1-compose.yaml cp tmp/edges.csv main:/tmp/edges.csv
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -euo pipefail
     export HADOOP_HOME=/opt/hadoop
