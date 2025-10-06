@@ -87,24 +87,36 @@ function test_terasorting() {
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -e
 
-    # Make hdfs resolvable
+    # Ensure HDFS CLI is available
     export HADOOP_HOME=/opt/hadoop
     export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
 
-    # Ensure data exists in HDFS (idempotent)
+    # Ensure input exists in HDFS (idempotent)
     hdfs dfs -mkdir -p /data >/dev/null 2>&1 || true
     hdfs dfs -test -e /data/caps.csv || hdfs dfs -put -f /tmp/caps.csv /data/caps.csv
 
-    # Run Spark and print only result lines
-    /opt/spark/bin/spark-shell --master spark://main:7077 -e "
-      val rdd = sc.textFile(\"hdfs://main:9000/data/caps.csv\")
-      val out = rdd.map(_.trim).filter(_.nonEmpty)
-                   .map{s => val p=s.split(\",\"); (p(0).toInt, p(1)) }
-                   .filter{case (y,_) => y <= 2025}
-                   .sortBy({case (y,sn) => (-y, sn)}, ascending = true)
-                   .map{case (y,sn)=> s\"$y,$sn\"}
-      out.collect().foreach(println)
-    " 2>/dev/null | egrep -x "^[0-9]{4},[0-9-]+$"
+    # Write a tiny Scala file that TERMINATES the JVM after printing (no REPL hang)
+    cat > /tmp/terasort.scala <<'"SCALA"'
+import java.io._
+val rdd = sc.textFile("hdfs://main:9000/data/caps.csv")
+val out = rdd.map(_.trim).filter(_.nonEmpty)
+             .map{s => val p=s.split(","); (p(0).toInt, p(1)) }
+             .filter{case (y,_) => y <= 2025}
+             .sortBy({case (y,sn) => (-y, sn)}, ascending=true)
+             .map{case (y,sn) => s"$y,$sn" }
+val res = out.collect()
+res.foreach(println)
+// Force the shell to exit so the test never hangs
+System.exit(0)
+SCALA
+
+    # Run with a hard timeout so the test can never hang indefinitely
+    # Filter out everything except valid result rows
+    timeout 120 /opt/spark/bin/spark-shell \
+      --master spark://main:7077 \
+      --conf spark.ui.enabled=false \
+      -i /tmp/terasort.scala -e "" 2>/dev/null \
+      | egrep -x "^[0-9]{4},[0-9-]+$"
   '
 }
 
