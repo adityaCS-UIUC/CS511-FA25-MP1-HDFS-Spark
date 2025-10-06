@@ -82,29 +82,100 @@ function test_spark_q4() {
         hdfs://main:9000/spark/tera-out hdfs://main:9000/spark/tera-val'
 }
 
+# --- REAL Part 3: HDFS/Spark Sorting -----------------------------------------
 function test_terasorting() {
-    # Output the expected TeraSorting results in the correct order
-    docker compose -f cs511p1-compose.yaml exec main bash -c '\
-        echo "2023,0829-0914-00120"; \
-        echo "1999,1234-5678-91011"; \
-        echo "1800,1001-1002-10003"' 2>/dev/null
+  # 1) Create the example CSV locally (exact lines from the prompt)
+  cat > CS511-FA25-MP1-HDFS-Spark/tmp/caps.csv <<'CSV'
+1999,1234-5678-91011
+1800,1001-1002-10003
+2023,0829-0914-00120
+2050,9999-9999-99999
+CSV
+
+  # 2) Upload to HDFS and run Spark to produce sorted output to stdout
+  docker compose -f cs511p1-compose.yaml exec main bash -lc '
+    set -e
+    hdfs dfs -rm -f /data/caps.csv >/dev/null 2>&1 || true
+    hdfs dfs -mkdir -p /data >/dev/null 2>&1 || true
+    hdfs dfs -put -f /tmp/caps.csv /data/caps.csv
+
+    # Run the sorting job; filter out Spark banner so we only print result lines
+    /opt/spark/bin/spark-shell --master spark://main:7077 -e "
+      val rdd  = sc.textFile(\"hdfs://main:9000/data/caps.csv\")
+      val rows = rdd.map(_.trim).filter(_.nonEmpty)
+                     .map{s => val p=s.split(\",\"); (p(0).toInt, p(1)) }
+                     .filter{ case (year, _) => year <= 2025 }
+                     // newest→oldest (desc year) then lowest→highest serial
+                     .sortBy({ case (y, sn) => (-y, sn) }, ascending = true)
+                     .map{ case (y, sn) => s\"$y,$sn\" }
+      rows.collect().foreach(println)
+    " 2>/dev/null | egrep -x "^[0-9]{4},[0-9-]+$"
+  '
 }
 
+# --- REAL Part 4: HDFS/Spark PageRank (Extra Credit) --------------------------
 function test_pagerank() {
-    # Output the expected PageRank results
-    docker compose -f cs511p1-compose.yaml exec main bash -c '\
-        echo "2,0.350"; \
-        echo "3,0.313"; \
-        echo "5,0.146"; \
-        echo "6,0.078"; \
-        echo "1,0.022"; \
-        echo "4,0.015"; \
-        echo "7,0.015"; \
-        echo "8,0.015"; \
-        echo "9,0.015"; \
-        echo "10,0.015"; \
-        echo "11,0.015"' 2>/dev/null
+  # 1) Create the example edges CSV locally (exact lines from the prompt)
+  cat > CS511-FA25-MP1-HDFS-Spark/tmp/edges.csv  <<'CSV'
+2,3
+3,2
+4,2
+5,2
+5,6
+6,5
+7,5
+8,5
+9,5
+10,5
+11,5
+4,1
+CSV
+
+  # 2) Upload to HDFS and run Spark PageRank; print ranks (3 decimals)
+  docker compose -f cs511p1-compose.yaml exec main bash -lc '
+    set -e
+    hdfs dfs -rm -f /graph/edges.csv >/dev/null 2>&1 || true
+    hdfs dfs -mkdir -p /graph >/dev/null 2>&1 || true
+    hdfs dfs -put -f /tmp/edges.csv /graph/edges.csv
+
+    /opt/spark/bin/spark-shell --master spark://main:7077 -e "
+      val d   = 0.85
+      val eps = 1e-4
+
+      val edges = sc.textFile(\"hdfs://main:9000/graph/edges.csv\")
+                     .map(_.trim).filter(_.nonEmpty)
+                     .map{ line => val p=line.split(\",\"); (p(0).toInt, p(1).toInt) }
+
+      val nodes = edges.flatMap{ case (s,t) => Seq(s,t) }.distinct().cache()
+      val N     = nodes.count().toDouble
+
+      val links = edges.groupByKey().mapValues(_.toSet).cache()
+      var ranks = nodes.map(n => (n, 1.0 / N)).cache()
+
+      def iterate(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
+        val contribs = links.leftOuterJoin(r).flatMap{ case (n,(outs,rankOpt)) =>
+          val rank = rankOpt.getOrElse(0.0)
+          if (outs.isEmpty) Seq() else outs.toSeq.map(dst => (dst, rank / outs.size))
+        }
+        val newRanks = contribs.reduceByKey(_ + _).rightOuterJoin(nodes.map((_,())))
+                           .map{ case (n,(sumOpt,_)) => (n, (1-d)/N + d*sumOpt.getOrElse(0.0)) }
+        newRanks
+      }
+
+      var delta = Double.MaxValue; var i = 0
+      while (delta > eps && i < 50) {
+        val newRanks = iterate(ranks).cache()
+        delta = ranks.join(newRanks).map{ case (_, (a,b)) => math.abs(a-b) }.max()
+        ranks.unpersist(false); ranks = newRanks; i += 1
+      }
+
+      val fmt = new java.text.DecimalFormat(\"0.000\")
+      val out = ranks.collect().toSeq.sortBy{ case (n,r) => (-r, n) }
+      out.foreach{ case (n,r) => println(s\"$n,${fmt.format(r)}\") }
+    " 2>/dev/null | egrep -x "^[0-9]+,[0-9]+\.[0-9]{3}$"
+  '
 }
+
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
