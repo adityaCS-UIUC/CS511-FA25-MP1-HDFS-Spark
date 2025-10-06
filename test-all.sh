@@ -82,84 +82,97 @@ function test_spark_q4() {
         hdfs://main:9000/spark/tera-out hdfs://main:9000/spark/tera-val'
 }
 
-# --- REAL Part 3: HDFS/Spark Sorting ---
+# --- Part 3: HDFS/Spark Sorting (robust, non-hanging) -------------------------
 function test_terasorting() {
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
-    set -e
-
-    # Ensure HDFS CLI is available
+    set -euo pipefail
     export HADOOP_HOME=/opt/hadoop
     export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
 
-    # Ensure input exists in HDFS (idempotent)
+    # Ensure input present in HDFS (idempotent)
     hdfs dfs -mkdir -p /data >/dev/null 2>&1 || true
     hdfs dfs -test -e /data/caps.csv || hdfs dfs -put -f /tmp/caps.csv /data/caps.csv
 
-    # Write a tiny Scala file that TERMINATES the JVM after printing (no REPL hang)
-    cat > /tmp/terasort.scala <<'"SCALA"'
+    # Write Scala program LITERALLY (no shell expansion inside)
+    cat > /tmp/terasort.scala <<'\''SCALA'\''
 import java.io._
 val rdd = sc.textFile("hdfs://main:9000/data/caps.csv")
 val out = rdd.map(_.trim).filter(_.nonEmpty)
-             .map{s => val p=s.split(","); (p(0).toInt, p(1)) }
-             .filter{case (y,_) => y <= 2025}
-             .sortBy({case (y,sn) => (-y, sn)}, ascending=true)
-             .map{case (y,sn) => s"$y,$sn" }
+             .map{ s => val p = s.split(","); (p(0).toInt, p(1)) }
+             .filter{ case (y, _) => y <= 2025 }
+             .sortBy({ case (y, sn) => (-y, sn) }, ascending = true)
+             .map{ case (y, sn) => s"$y,$sn" }
 val res = out.collect()
 res.foreach(println)
-// Force the shell to exit so the test never hangs
 System.exit(0)
 SCALA
 
-    # Run with a hard timeout so the test can never hang indefinitely
-    # Filter out everything except valid result rows
+    # Run with a timeout; strip CR/whitespace just in case
     timeout 120 /opt/spark/bin/spark-shell \
       --master spark://main:7077 \
       --conf spark.ui.enabled=false \
       -i /tmp/terasort.scala -e "" 2>/dev/null \
+      | tr -d "\r" | sed "s/^[[:space:]]*//;s/[[:space:]]*$//" \
       | egrep -x "^[0-9]{4},[0-9-]+$"
   '
 }
 
-# --- REAL Part 4: HDFS/Spark PageRank (EC) ---
+# --- Part 4: HDFS/Spark PageRank (robust, non-hanging) ------------------------
 function test_pagerank() {
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
-    set -e
-
-    # Make hdfs resolvable
+    set -euo pipefail
     export HADOOP_HOME=/opt/hadoop
     export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$PATH
 
-    # Ensure data exists in HDFS (idempotent)
     hdfs dfs -mkdir -p /graph >/dev/null 2>&1 || true
     hdfs dfs -test -e /graph/edges.csv || hdfs dfs -put -f /tmp/edges.csv /graph/edges.csv
 
-    # Run PageRank and print ranks only
-    /opt/spark/bin/spark-shell --master spark://main:7077 -e "
-      val d=0.85; val eps=1e-4
-      val edges = sc.textFile(\"hdfs://main:9000/graph/edges.csv\")
-                    .map(_.trim).filter(_.nonEmpty)
-                    .map{ l => val p=l.split(\",\"); (p(0).toInt, p(1).toInt) }
-      val nodes = edges.flatMap{case (s,t)=>Seq(s,t)}.distinct().cache()
-      val N = nodes.count().toDouble
-      val links = edges.groupByKey().mapValues(_.toSet).cache()
-      var ranks = nodes.map(n => (n, 1.0/N)).cache()
-      def step(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
-        val contribs = links.leftOuterJoin(r).flatMap{ case (_, (outs, ropt)) =>
-          val rank = ropt.getOrElse(0.0)
-          if (outs.isEmpty) Seq() else outs.toSeq.map(dst => (dst, rank/outs.size))
-        }
-        contribs.reduceByKey(_+_).rightOuterJoin(nodes.map((_,())))
-                .map{ case (n,(s,_)) => (n, (1-d)/N + d*s.getOrElse(0.0)) }
-      }
-      var delta=1.0; var i=0
-      while (delta>eps && i<50) {
-        val nr=step(ranks).cache()
-        delta=ranks.join(nr).map{case(_, (a,b))=>math.abs(a-b)}.max()
-        ranks.unpersist(false); ranks=nr; i+=1
-      }
-      val fmt=new java.text.DecimalFormat(\"0.000\")
-      ranks.collect().toSeq.sortBy{case(n,r)=>(-r,n)}.foreach{case(n,r)=> println(s\"$n,${fmt.format(r)}\")}
-    " 2>/dev/null | egrep -x "^[0-9]+,[0-9]+\.[0-9]{3}$"
+    # Literal heredoc (no interpolation -> avoids "bad substitution")
+    cat > /tmp/pagerank.scala <<'\''SCALA'\''
+val d = 0.85
+val eps = 1e-4
+
+val edges = sc.textFile("hdfs://main:9000/graph/edges.csv")
+              .map(_.trim).filter(_.nonEmpty)
+              .map{ line => val p = line.split(","); (p(0).toInt, p(1).toInt) }
+
+val nodes = edges.flatMap{ case (s,t) => Seq(s,t) }.distinct().cache()
+val N = nodes.count().toDouble
+val links = edges.groupByKey().mapValues(_.toSet).cache()
+var ranks = nodes.map(n => (n, 1.0 / N)).cache()
+
+def step(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
+  val contribs = links.leftOuterJoin(r).flatMap{ case (_, (outs, ropt)) =>
+    val rank = ropt.getOrElse(0.0)
+    if (outs.isEmpty) Seq() else outs.toSeq.map(dst => (dst, rank / outs.size))
+  }
+  contribs.reduceByKey(_ + _).rightOuterJoin(nodes.map((_, ())))
+          .map{ case (n, (s, _)) => (n, (1 - d)/N + d * s.getOrElse(0.0)) }
+}
+
+var delta = 1.0
+var i = 0
+while (delta > eps && i < 50) {
+  val nr = step(ranks).cache()
+  delta = ranks.join(nr).map{ case (_, (a, b)) => math.abs(a - b) }.max()
+  ranks.unpersist(false)
+  ranks = nr
+  i += 1
+}
+
+val fmt = new java.text.DecimalFormat("0.000")
+ranks.collect().toSeq.sortBy{ case (n, r) => (-r, n) }
+     .foreach{ case (n, r) => println(s"$n,${fmt.format(r)}") }
+
+System.exit(0)
+SCALA
+
+    timeout 180 /opt/spark/bin/spark-shell \
+      --master spark://main:7077 \
+      --conf spark.ui.enabled=false \
+      -i /tmp/pagerank.scala -e "" 2>/dev/null \
+      | tr -d "\r" | sed "s/^[[:space:]]*//;s/[[:space:]]*$//" \
+      | egrep -x "^[0-9]+,[0-9]+\.[0-9]{3}$"
   '
 }
 
