@@ -85,7 +85,7 @@ function test_spark_q4() {
 # --- REAL Part 3: HDFS/Spark Sorting -----------------------------------------
 function test_terasorting() {
   # 1) Create the example CSV locally (exact lines from the prompt)
-  cat > CS511-FA25-MP1-HDFS-Spark/tmp/caps.csv <<'CSV'
+  cat > /tmp/caps.csv <<'CSV'
 1999,1234-5678-91011
 1800,1001-1002-10003
 2023,0829-0914-00120
@@ -95,9 +95,9 @@ CSV
   # 2) Upload to HDFS and run Spark to produce sorted output to stdout
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -e
-    hdfs dfs -rm -f CS511-FA25-MP1-HDFS-Spark/tmp/caps.csv >/dev/null 2>&1 || true
+    hdfs dfs -rm -f /data/caps.csv >/dev/null 2>&1 || true
     hdfs dfs -mkdir -p /data >/dev/null 2>&1 || true
-    hdfs dfs -put -f CS511-FA25-MP1-HDFS-Spark/tmp/caps.csv /data/caps.csv
+    hdfs dfs -put -f /tmp/caps.csv /data/caps.csv
 
     # Run the sorting job; filter out Spark banner so we only print result lines
     /opt/spark/bin/spark-shell --master spark://main:7077 -e "
@@ -116,7 +116,7 @@ CSV
 # --- REAL Part 4: HDFS/Spark PageRank (Extra Credit) --------------------------
 function test_pagerank() {
   # 1) Create the example edges CSV locally (exact lines from the prompt)
-  cat > CS511-FA25-MP1-HDFS-Spark/tmp/edges.csv  <<'CSV'
+  cat > /tmp/edges.csv <<'CSV'
 2,3
 3,2
 4,2
@@ -134,9 +134,9 @@ CSV
   # 2) Upload to HDFS and run Spark PageRank; print ranks (3 decimals)
   docker compose -f cs511p1-compose.yaml exec main bash -lc '
     set -e
-    hdfs dfs -rm -f CS511-FA25-MP1-HDFS-Spark/tmp/edges.csv >/dev/null 2>&1 || true
+    hdfs dfs -rm -f /graph/edges.csv >/dev/null 2>&1 || true
     hdfs dfs -mkdir -p /graph >/dev/null 2>&1 || true
-    hdfs dfs -put -f CS511-FA25-MP1-HDFS-Spark/tmp/edges.csv /graph/edges.csv
+    hdfs dfs -put -f /tmp/edges.csv /graph/edges.csv
 
     /opt/spark/bin/spark-shell --master spark://main:7077 -e "
       val d   = 0.85
