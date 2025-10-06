@@ -1,5 +1,16 @@
 #!/bin/bash
 # test_hdfs.sh
+function inject_if_missing() {
+  local LOCAL="$1"; local REMOTE="$2"
+  # Fail loud if the local file isn't in the repo
+  if [[ ! -s "$LOCAL" ]]; then
+    echo "❌ Missing required file: $LOCAL" >&2
+    exit 1
+  fi
+  # If the file isn't present in container, stream it in via STDIN
+  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "test -s '$REMOTE' || cat > '$REMOTE'" < "$LOCAL"
+} 
+
 function test_hdfs_q1() {
     docker compose -f cs511p1-compose.yaml exec main hdfs dfsadmin -report >&2
 }
@@ -81,17 +92,6 @@ function test_spark_q4() {
         hdfs://main:9000/spark/tera-out hdfs://main:9000/spark/tera-val'
 }
 
-function inject_if_missing() {
-  local LOCAL="$1"; local REMOTE="$2"
-  # Fail loud if the local file isn't in the repo
-  if [[ ! -s "$LOCAL" ]]; then
-    echo "❌ Missing required file: $LOCAL" >&2
-    exit 1
-  fi
-  # If the file isn't present in container, stream it in via STDIN
-  docker compose -f cs511p1-compose.yaml exec -T main bash -lc "test -s '$REMOTE' || cat > '$REMOTE'" < "$LOCAL"
-}
-
 # --- Part 3: HDFS/Spark Sorting (robust, non-hanging) -------------------------
 # --- Part 3: HDFS/Spark Sorting (self-contained, no manual copies) -----------
 function test_terasorting() {
@@ -131,7 +131,6 @@ SCALA
   '
 }
 
-# --- Part 4: HDFS/Spark PageRank (robust, non-hanging) ------------------------
 # --- Part 4: HDFS/Spark PageRank (self-contained, no manual copies) ----------
 function test_pagerank() {
   # Ensure the container has the input, sourced from the repo
