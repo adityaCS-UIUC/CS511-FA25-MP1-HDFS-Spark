@@ -37,7 +37,6 @@ function test_spark_q1() {
     docker compose -f cs511p1-compose.yaml cp resources/active_executors.scala \
         main:/active_executors.scala
     docker compose -f cs511p1-compose.yaml exec main bash -x -c '\
-        export SPARK_HOME=/opt/spark && export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin && \
         cat /active_executors.scala | spark-shell --master spark://main:7077'
 }
 
