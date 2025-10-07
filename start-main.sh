@@ -38,7 +38,7 @@ $HADOOP_HOME/sbin/start-dfs.sh
 echo "Starting Spark cluster (Master on main, Workers on workers)..."
 # Start Spark Master on main and Workers on worker1 and worker2
 $SPARK_HOME/sbin/start-master.sh
-$SPARK_HOME/sbin/start-workers.sh
+$SPARK_HOME/sbin/start-workers.sh spark://main:7077
 
 # Start datanode on main as well
 $HADOOP_HOME/bin/hdfs datanode &
