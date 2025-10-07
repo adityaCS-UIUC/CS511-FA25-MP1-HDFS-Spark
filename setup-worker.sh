@@ -54,19 +54,3 @@ JAVA_PATH="/usr/local/openjdk-8/jre"
 # --- 3. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
 # Use sed to replace the default JAVA_HOME placeholder
 echo "export JAVA_HOME=/usr/local/openjdk-8/jre" >> ${HADOOP_CONF_DIR}/hadoop-env.sh
-
-
-echo "Setting up Spark Worker environment..."
-
-# 1. Copy template file (if not already done via the common layer)
-cp ${SPARK_HOME}/conf/spark-env.sh.template ${SPARK_HOME}/conf/spark-env.sh
-
-# 2. Configure SPARK_MASTER_HOST and SPARK_MASTER_PORT
-# This tells the worker where to connect
-echo "SPARK_MASTER_HOST=main" >> ${SPARK_HOME}/conf/spark-env.sh
-echo "SPARK_MASTER_PORT=7077" >> ${SPARK_HOME}/conf/spark-env.sh
-
-echo "export SPARK_DIST_CLASSPATH=\$(/opt/hadoop/bin/hadoop classpath)" >> ${SPARK_HOME}/conf/spark-env.sh
-
-# 3. Configure Spark logs directory
-mkdir -p /opt/spark/logs

@@ -59,33 +59,27 @@ EOF
 JAVA_PATH="/usr/local/openjdk-8/jre"
 # --- 4. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
 # Use sed to replace the default JAVA_HOME placeholder
-# --- 4. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
-# Use sed to replace the default JAVA_HOME placeholder
 echo "export JAVA_HOME=/usr/local/openjdk-8/jre" >> ${HADOOP_CONF_DIR}/hadoop-env.sh
 
+# Setup Spark configuration
+mkdir -p ${SPARK_HOME}/conf
+cat > ${SPARK_HOME}/conf/spark-defaults.conf <<EOF
+spark.master                     spark://main:7077
+spark.executor.memory            1g
+spark.driver.memory              1g
+spark.serializer                 org.apache.spark.serializer.KryoSerializer
+EOF
 
+# Setup Spark environment
+cat > ${SPARK_HOME}/conf/spark-env.sh <<EOF
+export JAVA_HOME=/usr/local/openjdk-8/jre
+export HADOOP_CONF_DIR=${HADOOP_CONF_DIR}
+export SPARK_LOCAL_IP=main
+EOF
 
-# ----------------- SPARK CONFIGURATION -----------------
-echo "Setting up Spark configuration..."
-
-# 1. Copy template files
-cp ${SPARK_HOME}/conf/spark-env.sh.template ${SPARK_HOME}/conf/spark-env.sh
-cp ${SPARK_HOME}/conf/workers.template ${SPARK_HOME}/conf/workers
-
-# 2. Configure SPARK_MASTER_HOST and SPARK_MASTER_PORT
-# We must use 'main' and '7077' as per the requirement
-echo "SPARK_MASTER_HOST=main" >> ${SPARK_HOME}/conf/spark-env.sh
-echo "SPARK_MASTER_PORT=7077" >> ${SPARK_HOME}/conf/spark-env.sh
-
-echo "export SPARK_DIST_CLASSPATH=\$(/opt/hadoop/bin/hadoop classpath)" >> ${SPARK_HOME}/conf/spark-env.sh
-
-# 3. Add all nodes to the 'workers' file (for master to know where to launch)
-# Add main, worker1, and worker2
+# Create Spark workers file
 cat > ${SPARK_HOME}/conf/workers <<EOF
 main
 worker1
 worker2
 EOF
-
-# 4. Configure Spark logs directory
-mkdir -p /opt/spark/logs
