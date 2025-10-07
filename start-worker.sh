@@ -1,33 +1,27 @@
 #!/bin/bash
+
 ####################################################################################
 # DO NOT MODIFY THE BELOW ##########################################################
+
 /etc/init.d/ssh start
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/shared_rsa
+
 # DO NOT MODIFY THE ABOVE ##########################################################
 ####################################################################################
 
-export JAVA_HOME=/usr/local/openjdk-8
+# Start HDFS/Spark worker here
+export JAVA_HOME="/usr/local/openjdk-8/jre"
+
 export HDFS_DATANODE_USER="root"
+# bash
+echo "Starting DataNode..."
+# Start the DataNode service
+$HADOOP_HOME/sbin/hadoop-daemon.sh start datanode
 
-# Wait for namenode to be ready
-sleep 15
-
-# Start DataNode - use full path and explicit logging
-echo "Starting DataNode on $(hostname)..."
-/opt/hadoop/bin/hdfs --daemon start datanode
-
-# Wait for datanode to initialize
-sleep 10
-
-# Start Spark Worker (keeping your working code)
-echo "Starting Spark Worker on $(hostname)..."
-export SPARK_LOCAL_HOSTNAME=$(hostname)
-export SPARK_LOCAL_IP=$(getent hosts $(hostname) | awk '{print $1}')
-/opt/spark/sbin/start-worker.sh spark://main:7077
-
-# Wait for worker to register
-sleep 5
+echo "Starting Spark Worker..."
+# The SPARK_MASTER_URL is read from spark-env.sh
+${SPARK_HOME}/sbin/start-worker.sh spark://main:7077
 
 # Keep the container running
 tail -f /dev/null
