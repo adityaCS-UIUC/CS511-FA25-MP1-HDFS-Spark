@@ -11,7 +11,10 @@ ssh-copy-id -i ~/.ssh/id_rsa -o 'IdentityFile ~/.ssh/shared_rsa' -o StrictHostKe
 ####################################################################################
 
 # Start HDFS/Spark main here
-export JAVA_HOME="/usr/local/openjdk-8/jre"
+export JAVA_HOME=/usr/local/openjdk-8
+export HADOOP_HOME=/opt/hadoop
+export SPARK_HOME=/opt/spark
+export PATH=$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$SPARK_HOME/bin:$SPARK_HOME/sbin:$PATH
 export HDFS_NAMENODE_USER="root"
 export HDFS_DATANODE_USER="root"
 export HDFS_SECONDARYNAMENODE_USER="root"
@@ -23,27 +26,32 @@ if [ ! -d "/tmp/hadoop-data/dfs/namenode/current" ]; then
 fi
 
 echo "Starting NameNode on main..."
-$HADOOP_HOME/bin/hdfs --daemon start namenode
+hdfs --daemon start namenode
 
-# Wait for namenode to be ready
+# Wait for namenode to be ready and exit safe mode
 echo "Waiting for NameNode to be fully ready..."
 sleep 10
 
+# Try to exit safe mode manually if needed
+hdfs dfsadmin -safemode leave 2>/dev/null || true
+
 echo "Starting DataNode on main..."
-$HADOOP_HOME/bin/hdfs --daemon start datanode
+hdfs --daemon start datanode
 
 # Wait for datanode to register
 sleep 5
 
 export SPARK_LOCAL_HOSTNAME=main
 export SPARK_LOCAL_IP=$(getent hosts main | awk '{print $1}')
+export SPARK_WORKER_CORES=1
+export SPARK_WORKER_MEMORY=1g
 
 echo "Starting Spark Master on main..."
 $SPARK_HOME/sbin/start-master.sh
 
 # Wait for master to be ready
 echo "Waiting for Spark Master to be fully ready..."
-sleep 5
+sleep 8
 
 echo "Starting Spark Worker on main..."
 $SPARK_HOME/sbin/start-worker.sh spark://main:7077
@@ -54,12 +62,17 @@ sleep 5
 echo "HDFS and Spark services started on main."
 echo "Workers will start their own DataNodes and Spark Workers."
 
-# Give workers time to start their services
-sleep 10
+# Give workers more time to start their services
+sleep 15
 
 echo "Checking cluster status..."
+echo "================================"
 echo "HDFS DataNodes:"
-$HADOOP_HOME/bin/hdfs dfsadmin -report 2>&1 | grep -A 1 "Live datanodes"
+hdfs dfsadmin -report 2>&1 | grep -A 1 "Live datanodes"
+echo "================================"
+echo "Processes on main:"
+jps
+echo "================================"
 
 # Keep the container running
 tail -f /dev/null
