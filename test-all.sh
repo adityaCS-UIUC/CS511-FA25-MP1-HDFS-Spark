@@ -131,39 +131,65 @@ function test_pagerank() {
 
     # Literal heredoc (no interpolation -> avoids "bad substitution")
     cat > /tmp/pagerank.scala <<'\''SCALA'\''
-val d = 0.85
+val d   = 0.85
 val eps = 1e-4
 
+// Load edges
 val edges = sc.textFile("hdfs://main:9000/graph/edges.csv")
               .map(_.trim).filter(_.nonEmpty)
               .map{ line => val p = line.split(","); (p(0).toInt, p(1).toInt) }
 
+// All nodes (sources and targets)
 val nodes = edges.flatMap{ case (s,t) => Seq(s,t) }.distinct().cache()
-val N = nodes.count().toDouble
-val links = edges.groupByKey().mapValues(_.toSet).cache()
+val N     = nodes.count().toDouble
+
+// Outgoing set for every node (include empty sets for dangling nodes)
+val linksRaw = edges.groupByKey().mapValues(_.toSet).cache()
+val links = nodes.map(n => (n, Set.empty[Int]))
+                 .leftOuterJoin(linksRaw)
+                 .mapValues{ case (_, outsOpt) => outsOpt.getOrElse(Set.empty[Int]) }
+                 .cache()
+
+// Init uniform
 var ranks = nodes.map(n => (n, 1.0 / N)).cache()
 
-def step(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
-  val contribs = links.leftOuterJoin(r).flatMap{ case (_, (outs, ropt)) =>
-    val rank = ropt.getOrElse(0.0)
-    if (outs.isEmpty) Seq() else outs.toSeq.map(dst => (dst, rank / outs.size))
+def iterate(r: org.apache.spark.rdd.RDD[(Int,Double)]) = {
+  // Dangling mass (nodes with no outlinks)
+  val danglingMass = r.join(links)
+                      .filter{ case (_, (rank, outs)) => outs.isEmpty }
+                      .map{ case (_, (rank, _)) => rank }
+                      .sum()
+
+  // Contributions from non-dangling nodes
+  val contribs = r.join(links).flatMap{
+    case (_, (rank, outs)) =>
+      if (outs.isEmpty) Iterator.empty
+      else outs.iterator.map(dst => (dst, rank / outs.size))
   }
-  contribs.reduceByKey(_ + _).rightOuterJoin(nodes.map((_, ())))
-          .map{ case (n, (s, _)) => (n, (1 - d)/N + d * s.getOrElse(0.0)) }
+
+  // Base term = teleport + redistributed dangling mass
+  val base = (1 - d) / N + d * (danglingMass / N)
+
+  // New ranks = base + d * incoming contribs; include nodes with zero in-degree
+  val newRanks = contribs.reduceByKey(_ + _)
+                         .rightOuterJoin(nodes.map((_, ())))
+                         .map{ case (n, (sumOpt, _)) => (n, base + d * sumOpt.getOrElse(0.0)) }
+  newRanks
 }
 
-var delta = 1.0
+// Power iteration to convergence (cap 50 iters)
+var delta = Double.MaxValue
 var i = 0
 while (delta > eps && i < 50) {
-  val nr = step(ranks).cache()
-  delta = ranks.join(nr).map{ case (_, (a, b)) => math.abs(a - b) }.max()
-  ranks.unpersist(false)
-  ranks = nr
-  i += 1
+  val next = iterate(ranks).cache()
+  delta = ranks.join(next).map{ case (_, (a, b)) => math.abs(a - b) }.max()
+  ranks.unpersist(false); ranks = next; i += 1
 }
 
+// Stable, sorted output (rank desc, node asc), 3 decimals
 val fmt = new java.text.DecimalFormat("0.000")
-ranks.collect().toSeq.sortBy{ case (n, r) => (-r, n) }
+ranks.collect().toSeq
+     .sortBy{ case (n, r) => (-r, n) }
      .foreach{ case (n, r) => println(s"$n,${fmt.format(r)}") }
 
 System.exit(0)
