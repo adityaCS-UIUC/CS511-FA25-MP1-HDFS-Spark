@@ -36,9 +36,8 @@ echo "Starting Spark cluster (Master on main, Workers on workers)..."
 # Start Spark Master on main and Workers on worker1 and worker2
 $SPARK_HOME/sbin/start-master.sh
 $SPARK_HOME/sbin/start-workers.sh
-
 # Start datanode on main as well
-$HADOOP_HOME/bin/hdfs datanode &
+$HADOOP_HOME/bin/hdfs datanode & 
 
 # Keep the container running
 tail -f /dev/null
