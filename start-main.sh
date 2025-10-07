@@ -22,20 +22,17 @@ if [ ! -d "/tmp/hadoop-data/dfs/namenode/current" ]; then
     hdfs namenode -format -force -nonInteractive
 fi
 
-echo "Starting NameNode..."
+echo "Starting NameNode on main..."
 $HADOOP_HOME/bin/hdfs --daemon start namenode
 
 # Wait for namenode to be ready
-sleep 5
+echo "Waiting for NameNode to be fully ready..."
+sleep 10
 
 echo "Starting DataNode on main..."
 $HADOOP_HOME/bin/hdfs --daemon start datanode
 
-echo "Starting DataNodes on workers via SSH..."
-ssh worker1 "$HADOOP_HOME/bin/hdfs --daemon start datanode"
-ssh worker2 "$HADOOP_HOME/bin/hdfs --daemon start datanode"
-
-# Wait for datanodes to register
+# Wait for datanode to register
 sleep 5
 
 export SPARK_LOCAL_HOSTNAME=main
@@ -45,17 +42,24 @@ echo "Starting Spark Master on main..."
 $SPARK_HOME/sbin/start-master.sh
 
 # Wait for master to be ready
-sleep 3
+echo "Waiting for Spark Master to be fully ready..."
+sleep 5
 
 echo "Starting Spark Worker on main..."
 $SPARK_HOME/sbin/start-worker.sh spark://main:7077
 
-echo "Starting Spark Workers on worker1 and worker2..."
-ssh worker1 "$SPARK_HOME/sbin/start-worker.sh spark://main:7077"
-ssh worker2 "$SPARK_HOME/sbin/start-worker.sh spark://main:7077"
-
-# Wait for workers to register
+# Wait for worker to register
 sleep 5
+
+echo "HDFS and Spark services started on main."
+echo "Workers will start their own DataNodes and Spark Workers."
+
+# Give workers time to start their services
+sleep 10
+
+echo "Checking cluster status..."
+echo "HDFS DataNodes:"
+$HADOOP_HOME/bin/hdfs dfsadmin -report 2>&1 | grep -A 1 "Live datanodes"
 
 # Keep the container running
 tail -f /dev/null
