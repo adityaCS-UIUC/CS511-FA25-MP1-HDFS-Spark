@@ -32,12 +32,12 @@ echo "Starting HDFS cluster (NameNode on main, DataNodes on workers)..."
 # Start NameNode on main and DataNodes on worker1 and worker2 via SSH
 $HADOOP_HOME/sbin/start-dfs.sh
 
-echo "Starting Spark cluster (Master on main, Workers on workers)..."
-# Start Spark Master on main and Workers on worker1 and worker2
-$SPARK_HOME/sbin/start-master.sh
-$SPARK_HOME/sbin/start-workers.sh 
-# Start datanode on main as well
-$HADOOP_HOME/bin/hdfs datanode & 
+echo "Starting Spark Master on main..."
+${SPARK_HOME}/sbin/start-master.sh
+
+echo "Starting Spark Worker on main..."
+# The SPARK_MASTER_URL is read from spark-env.sh
+${SPARK_HOME}/sbin/start-worker.sh spark://main:7077
 
 # Keep the container running
 tail -f /dev/null
