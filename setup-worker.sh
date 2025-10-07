@@ -54,3 +54,4 @@ JAVA_PATH="/usr/local/openjdk-8/jre"
 # --- 3. hadoop-env.sh (Set JAVA_HOME inside Hadoop config) ---
 # Use sed to replace the default JAVA_HOME placeholder
 echo "export JAVA_HOME=/usr/local/openjdk-8/jre" >> ${HADOOP_CONF_DIR}/hadoop-env.sh
+
