@@ -18,10 +18,7 @@ RUN ssh-keygen -t rsa -P '' -f ~/.ssh/shared_rsa -C common && \
 # Setup HDFS/Spark resources here
 
 # Set Hadoop and Spark versions
-ENV HADOOP_VERSION 3.3.6
-ENV SPARK_VERSION 3.4.1
-ENV HADOOP_HOME /opt/hadoop
-ENV SPARK_HOME /opt/spark
+ENV HADOOP_VERSION 3.3.6 SPARK_VERSION 3.4.1 HADOOP_HOME /opt/hadoop SPARK_HOME /opt/spark
 
 # Install dependencies
 RUN apt-get update && \
