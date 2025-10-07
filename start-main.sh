@@ -28,6 +28,9 @@ if [ ! -d "/tmp/hadoop-data/dfs/namenode/current" ]; then
     hdfs namenode -format -force -nonInteractive
 fi
 
+export SPARK_LOCAL_HOSTNAME=main
+export SPARK_LOCAL_IP=$(getent hosts main | awk '{print $1}')
+
 echo "Starting HDFS cluster (NameNode on main, DataNodes on workers)..."
 # Start NameNode on main and DataNodes on worker1 and worker2 via SSH
 $HADOOP_HOME/sbin/start-dfs.sh
@@ -35,7 +38,7 @@ $HADOOP_HOME/sbin/start-dfs.sh
 echo "Starting Spark cluster (Master on main, Workers on workers)..."
 # Start Spark Master on main and Workers on worker1 and worker2
 $SPARK_HOME/sbin/start-master.sh
-$SPARK_HOME/sbin/start-workers.sh
+$SPARK_HOME/sbin/start-workers.sh 
 
 # Start datanode on main as well
 $HADOOP_HOME/bin/hdfs datanode &
