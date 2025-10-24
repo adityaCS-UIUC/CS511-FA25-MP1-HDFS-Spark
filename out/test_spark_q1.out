@@ -1,12 +1,12 @@
- cs511-fa25-mp1-hdfs-spark-main-1 copy resources/active_executors.scala to cs511-fa25-mp1-hdfs-spark-main-1:/active_executors.scala Copying
- cs511-fa25-mp1-hdfs-spark-main-1 copy resources/active_executors.scala to cs511-fa25-mp1-hdfs-spark-main-1:/active_executors.scala Copied
+ cs511-fa25-mp1-hdfs-spark-3dd09ebc2c1dbd429b27fb822918d076f004ab31-main-1 copy resources/active_executors.scala to cs511-fa25-mp1-hdfs-spark-3dd09ebc2c1dbd429b27fb822918d076f004ab31-main-1:/active_executors.scala Copying
+ cs511-fa25-mp1-hdfs-spark-3dd09ebc2c1dbd429b27fb822918d076f004ab31-main-1 copy resources/active_executors.scala to cs511-fa25-mp1-hdfs-spark-3dd09ebc2c1dbd429b27fb822918d076f004ab31-main-1:/active_executors.scala Copied
 + cat /active_executors.scala
 + spark-shell --master spark://main:7077
 Setting default log level to "WARN".
 To adjust logging level use sc.setLogLevel(newLevel). For SparkR, use setLogLevel(newLevel).
-25/10/24 17:41:39 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+25/10/24 16:56:14 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
 Spark context Web UI available at http://main:4040
-Spark context available as 'sc' (master = spark://main:7077, app id = app-20251024174140-0000).
+Spark context available as 'sc' (master = spark://main:7077, app id = app-20251024165614-0000).
 Spark session available as 'spark'.
 Welcome to
       ____              __
