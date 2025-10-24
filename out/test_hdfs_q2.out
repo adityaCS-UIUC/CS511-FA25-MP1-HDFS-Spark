@@ -1,9 +1,3 @@
- cs511-fa25-mp1-hdfs-spark-3dd09ebc2c1dbd429b27fb822918d076f004ab31-main-1 copy resources/fox.txt to cs511-fa25-mp1-hdfs-spark-3dd09ebc2c1dbd429b27fb822918d076f004ab31-main-1:/test_fox.txt Copying
- cs511-fa25-mp1-hdfs-spark-3dd09ebc2c1dbd429b27fb822918d076f004ab31-main-1 copy resources/fox.txt to cs511-fa25-mp1-hdfs-spark-3dd09ebc2c1dbd429b27fb822918d076f004ab31-main-1:/test_fox.txt Copied
-+ hdfs dfs -mkdir -p /test
-2025-10-24 16:55:55,646 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-+ hdfs dfs -put -f /test_fox.txt /test/fox.txt
-2025-10-24 16:55:56,110 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-+ hdfs dfs -cat /test/fox.txt
-2025-10-24 16:55:57,123 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-The quick brown fox jumps over the lazy dog
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/fox.txt to cs511-fa25-mp1-hdfs-spark-main-1:/test_fox.txt Copying
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/fox.txt to cs511-fa25-mp1-hdfs-spark-main-1:/test_fox.txt Copied
+service "main" is not running

@@ -1,5 +1,1 @@
-2025-10-24 16:56:44,424 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-2025-10-24 16:56:44,876 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
-2023,0829-0914-00120
-1999,1234-5678-91011
-1800,1001-1002-10003
+service "main" is not running
