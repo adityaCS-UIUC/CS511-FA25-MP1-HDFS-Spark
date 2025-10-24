@@ -1,1 +1,43 @@
-service "main" is not running
+2025-10-24 16:55:55,003 WARN util.NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Configured Capacity: 485473984512 (452.13 GB)
+Present Capacity: 438662414336 (408.54 GB)
+DFS Remaining: 438662389760 (408.54 GB)
+DFS Used: 24576 (24 KB)
+DFS Used%: 0.00%
+Replicated Blocks:
+	Under replicated blocks: 0
+	Blocks with corrupt replicas: 0
+	Missing blocks: 0
+	Missing blocks (with replication factor 1): 0
+	Low redundancy blocks with highest priority to recover: 0
+	Pending deletion blocks: 0
+Erasure Coded Block Groups: 
+	Low redundancy block groups: 0
+	Block groups with corrupt internal blocks: 0
+	Missing block groups: 0
+	Low redundancy blocks with highest priority to recover: 0
+	Pending deletion blocks: 0
+
+-------------------------------------------------
+Live datanodes (1):
+
+Name: 172.21.0.3:9866 (main)
+Hostname: main
+Decommission Status : Normal
+Configured Capacity: 485473984512 (452.13 GB)
+DFS Used: 24576 (24 KB)
+Non DFS Used: 22075613184 (20.56 GB)
+DFS Remaining: 438662389760 (408.54 GB)
+DFS Used%: 0.00%
+DFS Remaining%: 90.36%
+Configured Cache Capacity: 0 (0 B)
+Cache Used: 0 (0 B)
+Cache Remaining: 0 (0 B)
+Cache Used%: 100.00%
+Cache Remaining%: 0.00%
+Xceivers: 0
+Last contact: Fri Oct 24 16:55:52 UTC 2025
+Last Block Report: Fri Oct 24 16:50:22 UTC 2025
+Num of Blocks: 0
+
+
