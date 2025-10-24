@@ -1,0 +1,9 @@
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/pi.scala to cs511-fa25-mp1-hdfs-spark-main-1:/pi.scala Copying
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/pi.scala to cs511-fa25-mp1-hdfs-spark-main-1:/pi.scala Copied
++ export SPARK_HOME=/opt/spark
++ SPARK_HOME=/opt/spark
++ export PATH=/usr/local/spark/bin:/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
++ PATH=/usr/local/spark/bin:/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
++ cat /pi.scala
++ spark-shell --master spark://main:7077
+/usr/local/spark/bin/spark-shell: line 60: /opt/spark/bin/spark-submit: No such file or directory

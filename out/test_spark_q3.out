@@ -1,0 +1,17 @@
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/fox.txt to cs511-fa25-mp1-hdfs-spark-main-1:/test_fox.txt Copying
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/fox.txt to cs511-fa25-mp1-hdfs-spark-main-1:/test_fox.txt Copied
++ export SPARK_HOME=/opt/spark
++ SPARK_HOME=/opt/spark
++ export PATH=/usr/local/spark/bin:/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
++ PATH=/usr/local/spark/bin:/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
++ hdfs dfs -mkdir -p /test
++ hdfs dfs -put -f /test_fox.txt /test/fox.txt
++ hdfs dfs -cat /test/fox.txt
+The quick brown fox jumps over the lazy dog
++ export SPARK_HOME=/opt/spark
++ SPARK_HOME=/opt/spark
++ export PATH=/usr/local/spark/bin:/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
++ PATH=/usr/local/spark/bin:/opt/hadoop/bin:/opt/hadoop/sbin:/usr/local/openjdk-8/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/spark/bin:/opt/spark/sbin
++ echo 'sc.textFile("hdfs://main:9000/test/fox.txt").collect()'
++ spark-shell --master spark://main:7077
+/usr/local/spark/bin/spark-shell: line 60: /opt/spark/bin/spark-submit: No such file or directory

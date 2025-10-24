@@ -1,0 +1,5 @@
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/spark-terasort-1.2.jar to cs511-fa25-mp1-hdfs-spark-main-1:/spark-terasort-1.2.jar Copying
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/spark-terasort-1.2.jar to cs511-fa25-mp1-hdfs-spark-main-1:/spark-terasort-1.2.jar Copied
+/usr/local/spark/bin/spark-submit: line 27: /opt/spark/bin/spark-class: No such file or directory
+/usr/local/spark/bin/spark-submit: line 27: /opt/spark/bin/spark-class: No such file or directory
+/usr/local/spark/bin/spark-submit: line 27: /opt/spark/bin/spark-class: No such file or directory

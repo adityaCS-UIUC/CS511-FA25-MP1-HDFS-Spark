@@ -1,0 +1,8 @@
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/fox.txt to cs511-fa25-mp1-hdfs-spark-main-1:/test_fox.txt Copying
+ cs511-fa25-mp1-hdfs-spark-main-1 copy resources/fox.txt to cs511-fa25-mp1-hdfs-spark-main-1:/test_fox.txt Copied
++ hdfs dfs -mkdir -p /test
+mkdir: Call From main/172.19.0.4 to main:9000 failed on connection exception: java.net.ConnectException: Connection refused; For more details see:  http://wiki.apache.org/hadoop/ConnectionRefused
++ hdfs dfs -put -f /test_fox.txt /test/fox.txt
+put: Cannot create file/test/fox.txt._COPYING_. Name node is in safe mode.
++ hdfs dfs -cat /test/fox.txt
+The quick brown fox jumps over the lazy dog
